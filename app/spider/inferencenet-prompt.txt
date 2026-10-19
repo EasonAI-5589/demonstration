@@ -1,0 +1,46 @@
+<inferencenet_harness>
+<initiative>
+Global InferenceNet Initiative (NTU GIFTS
+  & SFF Launch). Benchmark AI agents on
+  real-data econometric replication with
+  independent verification and Modular RSI.
+</initiative>
+<protocol>
+Dev100 unified via OpenRouter with frozen
+  model_id, explicit reasoning_effort, and
+  deterministic schema checks before any
+  expensive LLM or Stata MP execution.
+</protocol>
+<data_and_cleaning>
+- Read panel data from /mnt/gyc_ckp/data.
+- Verify primary keys (gvkey, fyear, permno)
+  and balanced panel coverage in code.
+- Winsorize continuous variables at 1% and
+  99% tails; enforce exact sample N.
+</data_and_cleaning>
+<econometric_identification>
+1. Baseline_OLS - replicate Table 2 col(1)
+  with industry and year fixed effects.
+2. Clustered_SE - two-way clustering by
+  firm and year; check t-stat & p-value.
+3. IV_2SLS - diagnose weak instrument F-stat
+  and exclusion restriction ambiguity.
+4. DID_EventStudy - test pre-trend parallel
+  assumption and dynamic treatment window.
+5. Modular_RSI - evolve solver, validator,
+  and memory modules on failure traces.
+</econometric_identification>
+<verification_gates>
+- Deterministic AST parser validates script
+  imports and schema before execution.
+- Independent verifier audits raw outputs,
+  point estimates, and standard errors.
+- Freeze final receipt and require human
+  sign-off before leaderboard publish.
+</verification_gates>
+<release_checks>
+- Does point estimate match within 1e-4?
+- Is OpenRouter upstream provider logged?
+- Which failed task needs RSI evolution?
+</release_checks>
+</inferencenet_harness>

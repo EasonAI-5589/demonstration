@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090a0d">
+  <title>Cyber Motion Lab · 6 大动态可视化复刻画廊 (Human → REA → Canvas)</title>
+  <link rel="icon" type="image/svg+xml" href="/spider/favicon.svg">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img src="/spider/favicon.svg" width="24" height="24" alt="" aria-hidden="true">
+      <div>
+        <div class="brand-title">CYBER MOTION LAB <span>6 SCENES · REA RECONSTRUCTION</span></div>
+        <div class="brand-sub">人找灵感 (XHS) → REA 拆帧测量 → 原生 Canvas 2D 重建 → Emil 动效打磨 → 同屏对比</div>
+      </div>
+    </div>
+    <nav class="scene-nav" aria-label="切换可视化场景">
+      <button type="button" class="scene-btn active" data-scene="spider-inet">01A · InferenceNet 蜘蛛</button>
+      <button type="button" class="scene-btn" data-scene="spider-studio">01B · 原版 Studio 蜘蛛</button>
+      <button type="button" class="scene-btn" data-scene="rea-decompiler">02 · REA 双环反编译</button>
+      <button type="button" class="scene-btn" data-scene="kessler-orbital">03 · Kessler 卫星碰撞台</button>
+      <button type="button" class="scene-btn" data-scene="stanford-torus">04 · Stanford 圆环连接组</button>
+      <button type="button" class="scene-btn" data-scene="subs-teardown">05 · 订阅拆解紫穹顶</button>
+      <button type="button" class="scene-btn" data-scene="jev-isometric">06 · Jev 等轴测判读仪</button>
+    </nav>
+    <div class="top-actions">
+      <button type="button" id="compareBtn" class="action-btn" aria-pressed="false" title="同屏对比原片关键帧（快捷键 C）">原片对比 (C)</button>
+      <button type="button" id="workflowBtn" class="action-btn quiet">复刻 Workflow</button>
+      <button type="button" id="fullscreenBtn" class="action-btn quiet" title="全屏沉浸模式（F）">全屏 (F)</button>
+    </div>
+  </header>
+
+  <main class="lab-main">
+    <section class="stage-grid" id="stageGrid">
+      <div class="canvas-pane">
+        <div class="pane-header">
+          <span id="sceneHeading"><i class="pink-dot"></i> INFERENCENET SPIDER // EVERY CLAIM, ONE FORK</span>
+          <span id="sceneBadge" class="meta-badge">Canvas 2D · 60 FPS Deterministic</span>
+        </div>
+        <div class="canvas-wrap">
+          <canvas id="scene" width="1080" height="1350" tabindex="0"></canvas>
+        </div>
+      </div>
+
+      <aside class="reference-pane" id="referencePane" hidden>
+        <div class="pane-header">
+          <span><i class="code-dot"></i> 原片参考帧 &amp; REA 测量证据链</span>
+          <a id="refXhsLink" href="https://www.xiaohongshu.com/explore/6acde7bd000000001203a044" target="_blank" rel="noreferrer" class="xhs-link">打开小红书原帖 ↗</a>
+        </div>
+        <div class="ref-image-wrap">
+          <img id="refImage" src="/assets/references/01-prompt-spider.jpg" alt="小红书原片参考帧">
+        </div>
+        <div class="evidence-card">
+          <div class="evidence-title">4-STAGE RECONSTRUCTION EVIDENCE</div>
+          <dl id="evidenceList" class="evidence-dl"></dl>
+        </div>
+      </aside>
+    </section>
+
+    <footer class="transport-bar">
+      <div class="transport-controls">
+        <button type="button" id="playBtn" class="primary">暂停</button>
+        <button type="button" id="restartBtn">重播 (R)</button>
+        <span id="timeText" class="time-readout">00.00 / 20.92</span>
+      </div>
+      <input id="timeline" class="timeline-slider" type="range" min="0" max="20.921" step="0.01" value="0" aria-label="播放时间轴">
+      <div class="transport-right">
+        <label for="speed">速度</label>
+        <select id="speed">
+          <option value="0.5">0.5×</option>
+          <option value="1" selected>1×</option>
+          <option value="2">2×</option>
+          <option value="4">4×</option>
+        </select>
+        <label class="loop-check"><input id="loop" type="checkbox" checked> 循环</label>
+        <span id="frameStatus" class="status-pill">01A · spider-inet</span>
+      </div>
+    </footer>
+  </main>
+
+  <dialog id="workflowDialog" class="workflow-modal">
+    <div class="modal-header">
+      <h2>「人找 → REA 抄 → 原生复刻 → 同屏看效果」标准工作流</h2>
+      <button type="button" id="closeWorkflowBtn">关闭</button>
+    </div>
+    <div class="modal-body">
+      <ol class="workflow-steps">
+        <li><strong>1. 人来找（Human Discovery · <code>$xiaohongshu-local</code>）</strong>：在小红书刷到惊艳的科研/遥测/动效帖子后直接点个赞，Agent 在内置真实浏览器里进入「我 → 点赞」原位点开读取文案、评论与原视频流。</li>
+        <li><strong>2. REA 来抄（Evidence Extraction · <code>$reverse-engineer-anything</code>）</strong>：运行 <code>node workflow/extract-evidence.mjs --video &lt;mp4&gt; --id &lt;scene-id&gt;</code>（或对网页跑 <code>rea analyze-web-bundle &lt;url&gt;</code>），提取关键帧、主色板 Hex、布局网格与时间轴状态跳变点。</li>
+        <li><strong>3. 确定性复现（Canvas Reconstruction · <code>$animate</code> + <code>$emil-design-eng</code>）</strong>：在 <code>app/scenes/&lt;scene-id&gt;.js</code> 用纯原生 ES Module + HTML5 Canvas 2D 重建视觉与物理轨迹，所有动画写成时间 <code>t</code> 的纯函数，支持时间轴任意拖拽回看。</li>
+        <li><strong>4. 同屏看效果（Side-by-Side Verification）</strong>：点击右上角「<strong>原片对比 (C)</strong>」，左边跑 60fps 实时 Canvas 交互，右边对照原片关键帧与测量参数，验收通过后一键推上 GitHub。</li>
+      </ol>
+    </div>
+  </dialog>
+
+  <script type="module" src="/gallery.js"></script>
+</body>
+</html>

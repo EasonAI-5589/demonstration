@@ -1,0 +1,44 @@
+[
+  {
+    "file": "01-prompt-spider.jpg",
+    "bytes": 415633,
+    "pixelWidth": 1080,
+    "pixelHeight": 1440,
+    "format": "jpeg"
+  },
+  {
+    "file": "02-rea-decompiler.jpg",
+    "bytes": 330648,
+    "pixelWidth": 900,
+    "pixelHeight": 1125,
+    "format": "jpeg"
+  },
+  {
+    "file": "03-kessler-orbital.jpg",
+    "bytes": 336082,
+    "pixelWidth": 1080,
+    "pixelHeight": 1300,
+    "format": "jpeg"
+  },
+  {
+    "file": "04-stanford-torus.jpg",
+    "bytes": 223040,
+    "pixelWidth": 884,
+    "pixelHeight": 1120,
+    "format": "jpeg"
+  },
+  {
+    "file": "05-subs-teardown.jpg",
+    "bytes": 214595,
+    "pixelWidth": 900,
+    "pixelHeight": 1128,
+    "format": "jpeg"
+  },
+  {
+    "file": "06-jev-isometric.jpg",
+    "bytes": 64989,
+    "pixelWidth": 900,
+    "pixelHeight": 506,
+    "format": "jpeg"
+  }
+]

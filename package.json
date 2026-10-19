@@ -1,0 +1,16 @@
+{
+  "name": "cyber-motion-lab",
+  "version": "1.0.0",
+  "private": false,
+  "description": "Interactive Canvas 2D cyber-telemetry & motion engineering lab with Human -> REA -> Canvas -> Emil Polish workflow",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test tests/gallery.test.mjs",
+    "extract": "node workflow/extract-evidence.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}
