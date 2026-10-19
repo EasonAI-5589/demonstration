@@ -1,32 +1,83 @@
-// Scene 02: REA · BYTES IN. SOURCE OUT. (Dual-Ring Disassembler vs Decompiler Handoff)
-const WIDTH = 1080;
-const HEIGHT = 1350;
-const MONO = '"SFMono-Regular", Consolas, "Liberation Mono", monospace';
+// Scene 02: REA · BYTES IN. SOURCE OUT. — dual-ring disassembler (left) / decompiler (right) handoff.
+// Two evidence keyframes anchor the 24 s timeline: t=0 "loading" (camera ×0.80, tangled webs) and
+// t=14 "linking" (camera ×1.25, combed webs, handoff ledger). The stage is a world-space scene seen
+// through a zooming camera; the HUD bar and the terminal are fixed. Needle envelopes, needle palettes
+// and the web washes are tables measured from those two frames (1° / 2° bins in ring-polar space).
+const W = 1080;
+const H = 1350;
+const STAGE_TOP = 36;
+const STAGE_BOTTOM = 1004;
+const BG = '#fdfdfd';
+const MONO = '"JetBrains Mono", "JetBrainsMono Nerd Font", "JetBrainsMono Nerd Font Mono", "SF Mono", "SFMono-Regular", Menlo, Consolas, monospace';
+const DEG = Math.PI / 180;
+const TAU = Math.PI * 2;
 
-const fract = x => x - Math.floor(x);
-const rand = seed => fract(Math.sin(seed * 127.1 + 311.7) * 43758.5453123);
-const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+// Camera: screen = (PIVOT_X, PIVOT_Y) + zoom * (world - (0, CAM_Y)).
+const PIVOT_X = 540;
+const PIVOT_Y = 573.7;
+const CAM_Y = 72.9;
+const T_START = 1.6;
+
+// Point-symmetric rings about the handoff diamond at the world origin. Ring angle θ is measured from the
+// ring's gap-facing axis: +θ is below the axis on the left ring and above it on the right ring.
+const RINGS = {
+  L: { cx: -1166, cy: 62.5, ang0: 0, sign: 1 },
+  R: { cx: 1166, cy: -62.5, ang0: Math.PI, sign: -1 },
+};
+const R_TRACK = 912;
+const R_BAR1 = 905;
+const R_LINE2 = 964;
+const R_TICK0 = 970;
+const R_TICK1 = 984;
+const R_EDGE = 990;
+const R_NEEDLE = 994;
+const CORE_W = 1.45;
+const CORE_K = 0.36;
+// Needle lattice θ_k = θ0 + k·pitch (degrees), k ∈ [-KMAX, KMAX]; measured per keyframe and side.
+const KMAX = 190;
+const LATTICE = {
+  A: { L: [-0.0345, 0.2175], R: [-0.0158, 0.2175] },
+  B: { L: [0.0465, 0.2207], R: [0.0423, 0.2207] },
+};
+// Combed fibres are straight lines through a convergence point E world units from the ring centre,
+// toward the gap; the colour profile is indexed by the angle ψ about that point.
+const WP_T0 = -34;
+const WP_STEP = 0.05;
+const FIBRE_E = { L: 80, R: 84 };
+const LABEL_STEP = 9.95 / 8;
+const WEB_RADII = [440, 520, 600, 680, 760, 830, 890];
+const WASH_GAIN = 0.86;
+const CARD_WHITE = 0.62;
+const CARD_RECT = [-267.5, 120.2, 523.7, 243.2];
+const HAZE_W = 24;
+const HAZE_H = 11;
+// Tone map of the combed web: rows by fibre angle ψ (1° from MOD_T0), stops by distance from the convergence point.
+const MOD_R = [520, 580, 640, 700, 760, 820];
+const MOD_T0 = -34;
 
 const LEFT_LABELS = ['mk-31 redo', 'd-0412', 'mk-52 ok', 'q03 12.9', 'mk-64 draft', 'mk-07 draft', 'mk-12 ok', 'I draft'];
 const RIGHT_LABELS = ['ck-11 pass', 'ck-03 pass', 'ck-02 pass', 'v12 08.1', 'ck-16 pass', 'd-0412 ok', 'ck-07 bounce', 'I pass'];
+
 const HANDOFF_ROWS = [
-  ['d-0417', 'mk-14 → ck-03', 'PASS', 0.92],
-  ['d-0418', 'mk-31 → ck-09', 'WAIT', 0.54],
-  ['d-0419', 'mk-07 → ck-11', 'PASS', 0.88],
-  ['d-0420', 'mk-52 → ck-07', 'PASS', 0.96],
-  ['d-0421', 'mk-40 → ck-02', 'PASS', 0.91],
-  ['d-0422', 'mk-12 → ck-15', 'REDO', 0.43],
-  ['d-0423', 'mk-60 → ck-05', 'PASS', 0.89],
-  ['d-0412', 'mk-19 → ck-12', 'PASS', 0.84],
-  ['d-0413', 'mk-51 → ck-04', 'PASS', 0.95],
+  ['d-0417', 'mk-14 → ck-03', 'PASS', 0.98, 1],
+  ['d-0418', 'mk-31 → ck-09', 'WAIT', 0.36, 0.16],
+  ['d-0419', 'mk-07 → ck-11', 'PASS', 0.96, 1],
+  ['d-0420', 'mk-52 → ck-07', 'PASS', 0.97, 1],
+  ['d-0421', 'mk-40 → ck-02', 'PASS', 0.95, 1],
+  ['d-0422', 'mk-12 → ck-15', 'REDO', 0.42, 0.16],
+  ['d-0423', 'mk-60 → ck-05', 'PASS', 0.96, 0.85],
+  ['d-0412', 'mk-19 → ck-12', 'PASS', 0.97, 1],
+  ['d-0413', 'mk-51 → ck-04', 'PASS', 0.98, 1],
 ];
-const CODE_LINES = [
-  '// nothing ships unchecked',
-  '// dual arc · maker + checker',
-  'import { ring, gap } from "orbit"',
-  'const mk = ring("L", { agents: 64 })',
-  'const ck = ring("R", { agents: 16 })',
+
+// rea.ts · live — listing at the loading keyframe (A) and after the linking pass (B). '§' lines are mid-decode.
+const CODE_A = [
+  '§=%+=1+1>&=<>1$&1',
+  "import { ring, gap } from 'orbit'",
+  "const mk = ring('L', { agents: 64 })",
+  "const ck = ring('R', { agents: 16 })",
   'async function draft(task) {',
+  '§&=',
   '  return gap.send(d)',
   '}',
   'async function check(d) {',
@@ -35,444 +86,1870 @@ const CODE_LINES = [
   '  return ship(d)',
   '}',
   'for (const t of queue) {',
+  '  spawn(draft, t)',
+  '}',
+  "gap.on('draft', check)",
+  "gap.on('bounce', d => {",
+  '  mk.redo(d, d.notes)',
+  '})',
+];
+const CODE_B = [
+  '// nothing ships unchecked',
+  '}',
+  '// dual arc · maker + checker',
+  '}',
+  '}',
+  "const ck = ring('R', { agents: 16 })",
+  'async function draft(task) {',
+  '})',
+  '  return gap.send(d)',
+  '}',
+  'async function check(d) {',
+  '  const ok = await ck.verify(d)',
+  '  if (!ok) return gap.bounce(d)',
+  '  return ship(d)',
+  '}',
   '  ck.align(mk.wave)',
   '  spawn(draft, t)',
   '}',
-  'gap.on("draft", check)',
-  'gap.on("bounce", d => mk.redo(d))',
+  "gap.on('draft', check)",
+  "gap.on('bounce', d => {",
+];
+// Decode start per line (s): a sweep down the file; lines 5–7 and 15–16 are still settling at t=14.
+const CODE_TAU = [3.2, 3.8, 4.4, 5.0, 5.6, 13.15, 13.05, 12.9, 6.6, 7.1, 7.6, 8.1, 8.6, 9.1, 9.6, 12.75, 12.55, 10.6, 11.1, 11.6];
+const KEYWORDS = new Set(['import', 'from', 'const', 'async', 'function', 'return', 'if', 'for', 'of', 'await']);
+const SCRAMBLE = '=%+<>&$#*!?/\\|01';
+
+// ---------------------------------------------------------------- evidence tables (packed hex, measured)
+// needles on the lattice (k = -190..190): length/2 + mean colour at 16% / 47% / 80% of the needle — loading, left ring
+const NL_A_L = [
+  '00fbfbfbfbfbfbeaeaea00fbfbfbfbfbfbeaeaea06fbfbfbfbfbfbeaeaea07fefffff7f7f7d4d4d513fcfcfcebebebe5e5e50cffffffd8d8d8e3e3e5',
+  '0dffffffdad9dad1d2d413fbffffe8e6ebecebed0ffbffffbfbec3ffffff21fbfbfce1e1e4e0e0e220f9f9f9e7e7e9e3e3e41df8f8f8e7e7e9dfdfe0',
+  '20f6fbfbd3d2d6ececea22f6f6f6e0e0e1e7e7e71ffbfbfbefefefe5e5e519fcfcfce6e6e6e5e5e51ef1f5f5d3d2d2efefef14fafdfccdccccd1d1d1',
+  '2bf9f9f9dddddddddddd0effffffdededee8e9e713f3f7f7d1d0ccd5d5d515f6f9f9d7d4cfc9c8c80efbfefededad7bdbab318eef1edcdc4c2d1d1ce',
+  '17eef2eccabdbed6d6d010f7fbf5cabbbdaea69e16f3f2eebfb1afc2bfbb16f0efeecabdbadad6d613fcfdfbcec0bcb9b4b21bf5f9f6d5c3bff1f4f3',
+  '11fdfffeccc1bde4ddd80dffffffe3dbd897857c14f8faf7c7b7b5c7bfbd15f3f7f4c8b8b5cdc4c314f7f7f6c7bab7ded8d713fdfffdcfc2c1c1b7b6',
+  '10ffffffe0d5d5e0d3d215f5f9f7d2c7c7d2cdca18f2f4f4cbbebfdddcd916f1f5f4d5cacde0dddd18fbfffecdc3c4d9d8d729f3f3f3f0eaebe4e2e0',
+  '15ffffffd7d1d3dad9d72fefedeee4e0e1dcd9d916f2f3f3d5d0d1e8e2e31de9eaead3cdcfddd8d91debebebcdc7c8dbd5d51df1f1f1d1cacbd7d0d2',
+  '1febebeccdc8c7d0cbcb20efefefc4b5b4d1cbc91debecebe7cbc4c2b6b41addd8d5d7b2a3cab2a823d3c0b9916b57dbcfc728dfc3bba57d687e736d',
+  '29d9bdb6c2977f69585225dec3bbab7b5f64483e2fbc9788996c5971625b2fd4ae9b906150715b5429cba3939967535d3c3432e5b8a77d503d69514c',
+  '31d2a7949c6b5a8a756f27e4c0b2aa685456332730b88875a97163785f562ed9a999864f406e554c33c08e7d7e5142624e4534e4b4a1634030c5b8b2',
+  '26dcbcae955e4b4a2f242be0b9ac8558468b756d27c8a99b85503c654e4427debaac7c4c3a8a766c26d6b7ab81533e8c7a7024eccec7945e47574136',
+  '23e0c7bc955e497b655a22e6ccc1905b47a88e8523d2b8ad8c5b49684c4424e0c5ba794b3baf938c23dfbeb6825342bda19e20eed4cea96d55684a46',
+  '20e1cac5b16f576a494821e4c8c1a9685083636521d3baaca8624c6f494920dfc5b6a059406c404124dbb9ab98563c6f454923f0d1cea56142623738',
+  '25ceb3aab7735762393b22dcc2bab472564a18192bbea298a26a567a55582cd8beb47b4336633d412ccfbbb5a97265825c622cd4c0bcbb877b866368',
+  '2ad8c7c6b78174b692982bcebdbbc0897eb8959d2cdfcbcbb67b72c1a1a82ccdbab9d19288bd9da125d3c3c3c87a72bc898b2fd4bebfc47570d2bcbf',
+  '2fe3cccdc2726cc3b3b229d4c0c3d8857db5989623ddd3d5b96d66dfb6b41ee5dee0cd928cbf787719e6e3e4ca9d9abb6a631fe1d8d7c89796cfa09d',
+  '1befe8e8bf9396c495921be6dfdec89aa5ddc6c016f6f4f2c29aa5d4b3b813fdffffceaab3caa7b112feffffd1b2b9c8a3af13fdffffe5c4cee2bfca',
+  '14fbfbfbc1a3add2b4bf13fbfcfcc5a6b1d4bec712ffffffc2a6b1c8abb712ffffffc7a6b4dfccd611ffffffc29eacc9b9c215f6f4f9ddb7c5d4c5cc',
+  '0dffffffc3a4ac9e557117f2eaf0c592a1c4acb611ffffffa9757fba7f9217f0ebf3c79598c399a60efaffffffeadf6c00031ce6d3dcc2867fdcb6bf',
+  '1cefd7dfcc8a80d3a5aa17e5d4dbc78678cb86831ce7d4d8c47e70c488871ce6d0d4b36a5cd0989418e9d5dbb87061b0584e20d9b3b0c17762b8858b',
+  '25e1b8b3b96d58bd919a25e2b5acc26d5bdabdc01ce5c3c0c36d5dc57d7621e6bbb7cd7868c58d921be7c6cacf8375d28d851ae1c6c9bc6d64cd897e',
+  '19ebd6d8bf726cc38a7c18eee2e3b96d68dea69a16ebe4e5dc9795b56d681ce1d3d5b97472f0babf1cdfcbcfd39192e1abb81ce0ccd2ca8c90eab5c3',
+  '1be5d1d9c18387facbdd23e9d9ddb26871ffffff11ffffffd89ca5e3adb712f7f3f7d99aa4e6a7b412fcf9fdc2858ee9adbb10fffdffbd8089d995a1',
+  '10ffffffc78a95c486910dffffffba7f86b5647312fbf5fabc7b80dbaab50effffffcc8c919b3b4416f1e1e6ca7f7df3ced917e8d4d9bb6d67efc1c8',
+  '1cf2d2d7af5c4effe4f123e1aeacd3807bf3d2dc26d9a09bb35a51f1cdd723dfa09bac4c38c18f9422e9a39c8d2b0ecb848a31de8e7b9c4935e7c1ca',
+  '32d78771aa523a9c727432d3826ab65e407b4d4b31d48166b75d3e622e2431d68669aa502f8e5b4836ce7959aa513299645636d37d5ead5531814840',
+  '37d98668b65e3984504837c77b5db95f3c6c3a3037ce8369a9502c97696136c67a659e4522d0a7a135c67f6eb35a34cda1a533cb8778b15733e4b7bd',
+  '33ce8877ba6242dbafb830d49080ce755acd9a9e2ecf887bbf6450e6b5ba20d89a93b35441e89a8d2ad98e84bd6552dfb4bb24c47872cf7864f7bab8',
+  '24c47b74b8604cefb3b02ecf8578cd7868fdd9e82fcd8779d78474f6d5e639cc8572c87f77f0d2e468b5614af4d5ece2d5e067b86347f2cfe5f0e0eb',
+  '65ad5635efbed0e8cfe166b85d39cd979cf2d3e962c669439a5c54e0b9cc67c66b3b914c3ac29ca45dc66d3c803919ae8a8f69c56b3689422399787a',
+  '68b45a229c522a84666564c46630a0542470545168be6c35a659225b423c6d86440dad7343220d0669a173379e672f49342c67774915885921573a34',
+  '6c714914744a1a694b4d666f49186f45145c423f656e44137b4d21331d19647045117d502458433c627044127b4d248c7772636d3f0d6c391ac1adac',
+  '5d7a4815784424d4bbc559824d1c8b4f32f0cedf588f5427b97a62efcee74aa05f38a86444e7c1d540b06a46a35937f0cdd736cf8766b05f3bf6ced1',
+  '30cb7e5a9a4c24f2b8b62de295728d4a2eb77f7829dd906d662a149262542ec678545a2e1ba173692fdd936f522d1899665f2fc17950482919c3918c',
+  '2dce885e391c0fbb878132a6613b2f180ae4b1af32b7734c321a0acb9d982eb3704c48291773443d34c280574329186a3d3934ab6b43503523744642',
+  '34af7145442a1c5d272432a06a46543424784b4829b78056462a161d000038a96d41331e14bb807f38b5754624130bad757437af693b3b2b1f754744',
+  '34b07148442d1d35130e34a0683e4d352048272232b3744b4830146b464430b4744b593e227953522dbe815b4c30177755532dbf825d4f391f734c4a',
+  '2eb78059402d18845b5b2bb07f5843321a8a61632fae7a573e2c19ca9da32fc78b6a422c1dd2a0a832c57f5b392317ffccd930d18565563b30ffd3df',
+  '26cd947a512611c59e9e22caa086784730805f5b18ddbeacac65430600001edbaa9b9354396c4a441ee5aea58045278c6a641cdbaba893502c67433d',
+  '1be0b6b67e3c1e633d341cd5afa87f4128936f651ddcb6a9693119af8b811dd9b0a076412a633b311ddeb39f713d28a27b721bd5af9e78432978564c',
+  '19dfbaaa6b371985645b1adab6a56a3e2458362e19d8b8a86f441f77564d18d2b1a57c522c714e4018e3c1b75e301690625319e1beb8623721a27163',
+  '19d7bcb55b321864392718c8aca160381c6f47321cc8ada0673c22553b2917d1c0b4a672513417031ad2bdab6d3a204429191fcdb59f6438227c635a',
+  '1fcab39d593016aa8d851dc3ab9e683e1e67473d1bd0b9b37343208a6e641bd9bdb68752326045391ae7c8c6854c2b745a4c1adfc5c09b5f426d5546',
+  '1adacbc488492b624a3b1ad4c4ba975f41604a4214ebe7e0894b31ba9a8c17e9e2e0b48371c5a79e16ebe6e5c09689b9958e14efeeecb88f89d3aca8',
+  '13f3f5f4e4c1bfd4aaac18eae7e8c49d9be4cdd018e8e4e4d9b3b3c2aeaf17f3f0f2c39d9dc7b9b617dcd9dac9a2a3bdafad17e4e3e4c9a4a4beadab',
+  '17e5e6e8c3a3a3ceb9b71bdbd5d9c5a4a4d2c6c11ae1d9daccaaacd7c9c319e5deded5b4b7ccbab619e9e6e5b99c9dead8d219e9e5e5d8bec0cfbcb7',
+  '19ebe8e8c6acadd2c0ba24dcd8d9bfa2a2e1d8d0acdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd',
+  '1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd',
+  '1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd',
+  '1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd',
+  '1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd',
+  '1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd',
+  '1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd',
+  '1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd',
+  '1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd',
+  '1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd',
+  '1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd',
+  '1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd',
+  '1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd',
+  '1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd',
+  '1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd',
+  '1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd',
+  '1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd',
+].join('');
+// same, loading, right ring
+const NL_A_R = [
+  '00fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e9',
+  '00fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e9',
+  '00fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e9',
+  '00fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e9',
+  '00fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e9',
+  '00fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e9',
+  '00fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e9',
+  '00fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e9',
+  '00fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e9',
+  '00fcfcfce3e6e9dee3e91afcfcfce3e6e9dee3e91bf9ffff666e839aa8b525e4eaea546c8948535e2be4edf36f93ae333d551edde3e986a7c2283e60',
+  '1dd9e1e97b95b43e58781ed5e1eb7c92b0253e5a1cccd9e47f91af6278909bd0dae68698b46f7f951edeecf6738aad2f405f1adae2ed9bb6d5556687',
+  '22bec8da53719067728b23ced6e6577393b4bbcf1ebdc1ce5f7c9e48547122c7cfdb466686737e931ee1e8f3577595435a6c21c8d4e2617ea24e6572',
+  '1ec2cfde476a918ba3b21ad6dfe66787b00422401fc5cedc516a94455c741cd6dce74c648b6c7f9c1ee1e9f55b73973547651fced8eb526b9176869e',
+  '1bcedbe74b628a8495b015eff8f78eabd300000f1bcfd9e25671973e4b6418f6f6fd2e4d73828ea10cfffefad4ffff00000016f1f5f475a0d4132844',
+  '17ecf8f640609448536517ebf5f56a85b52e3d5317deeaeb4f679334425e18e0eef050669045506919def0f47183ac39435f19def1f362749b3b4266',
+  '15ecfbfa485b7d313d6718ebf6fa69799d3f476d1aecf2f98494be4749671be1e4ee94a2cb86869d16f6f6fb8a93b99a9dc313ffffffaaa8c66f76aa',
+  '19ebeef2a3a2c5a9abc41beaecf39e9bbea4a5c01febedf5a7a7cab0aebc0fffffffbfbdc8646bb01be7eceea2a3c1aeb0c81be1e5e7a3a5c4b2b4ce',
+  '1fdadde29295b7aeafc823d7d9e39ea2c3bbb9ce23d7dbe3a1a4c5afadc224d3d7e19ea1c2dedced21e0e2ec999cbda6a4bf22d9dce99ea2c3b9b5cf',
+  '19f1f4f8a9afcb8b89b51febeff6abb0ceb3b2cc20d0d4daaeb6d4b9b8d020dbdfe594a0c2bebcd721e4eaef96a4caa3a0be21dce0e78995c49393b4',
+  '22d3d7e18894c89899ba22d4d6e17783bca0a1c41ae0e0e67887b97077b622d1d3e17482bb9094bd22cfd2e07989c29698c725ccd2e07687c7989bc2',
+  '26cdd4e28092d2979bc322c8cee0788dd7abb5db27b7bfd66a84cfa7add629b9c1d96783ce9ba0ca29b7c0db617dc8969bc82ab3bbd95773c17e86b4',
+  '27b9bedd5a76c4848dbd28b6bddd4b69b6a9b4e027b7bede5773bf737eb228aeb8d36b82cb929cca1ad0d8e594a1d500138525b7c3e07a8bcf6775b0',
+  '24b1bdd97386c9949ed4269eabce6c7fbf939bcc249daad26f80b9848aba2697a5cf6d7fb4969dcb287f8cbd7c8ec19093b628909dcd697baca5a8ce',
+  '2196a1ce768bb9777db421afbadb788bba838cb623b7c3e07187b4a1a8cb1ac8d1ec7b91bd425b9520c0cde87187b88a98c421bccbe26b81b48a96c5',
+  '24a1b3d16782b78d98c225abbddc5f81b68995be24afc0df557bb17889b223b0c1e1597eb77389b323a6b9db5f82be7a8cb824a4b9dd5879bb6c7db1',
+  '2795acd45373ba707dad2793abd75d7dc5707ba92b8ca8db5475c27680a72b8caadc6889d9545e832e81a1d74c70be7c7da231779bd64266b09593c4',
+  '32769cd85375b94c497f35749ddb3756966d69933a6c96da1b3369e0d7f02a799bd8476eb7454e7e2c7a9bd74466af5e5f862d789dd74361a76b688d',
+  '2881a6dc2a4c956b6e972587aedf2c529ca0a7cd277da3d04f72bb9ea5c2277b9fcf3a599cd7dbee2384a6d05376b7d0d4e82484a8d04466a3dbddec',
+  '1d8fb0d44a6ea6828eb22089abcd5c80b2bcc4dd1c97b6d55076a3c8d6eb1d94b3d5456c98afbfde1b94b2d34d739f778bb11a91afd2557aa58ca5ca',
+  '1d8bb1d46e90ba9fb2cf1c7faccf5478a29cafd42576a6ce5a7babc8d5f0276a9dc65076aabbc8e428649ecb476ea6a1b1d3295a98d04b73b08fa3c9',
+  '2c5798d53c68ac889bbc364c93d9234c85a4aed14b3b86d5354c78e0ddeb4b3886d43d5589d8d6e7493a88d23a5c9b9397ac493e8cd4204a868082ab',
+  '493e8dcb2a57918789b2593789c02d4c7a60577e5e3387b1203a65e1d1df58106786365072e0d5e7422d86971b4d5959638c412c89861b4d4894a0c0',
+  '3831918c002a217a8ea4302e8c8700281e59778e332b867f033230a0b2c32f348e8c00333598b1bd2a349595002d318eaeba2c328a8b083b43b6c8d6',
+  '2b3b8e92225860bccbdb2154a1a8195b5d9fbcce274c97a04b878bbbc6d6215ba3ad4b8a90b9cedf215aa0ac59969dcadaec215fa0b05f939dc1d0e5',
+  '1f6caabc528590c0d3e523619bae6d93a2c9d9ea24679cb38aa8bacddbeb2773a9c36a8a9cc6d7e72a5590ac819eaeb5c6d72d4b89a66a8998adbbcc',
+  '333a7a97354e5ea4afbe3336799418313f748190363d839e1f39446e7e8c3a38859e1730366477853b2d7d961d373d2c3e4d3c2c7b941c363d3f5060',
+  '3c2e7c931e373d1423323c2b788f1c373d1521303c327f961a373d1a26373b3281961e3d41101b2c3b2e839519373b1622343632849814373b162634',
+  '3135839813383f05182536368097193841182733323d8a9f1a3f4735425033418fa41e3f49444f5f274290a62b5f690000002c3d89a0234a56323c4d',
+  '2c418ba7193c4b4c546b2c418bac1b37485e6a822157a2c82d4f61000b2f2764abce224057465e762370b2d717374d49647d256dabcf25445c48637a',
+  '256ba4c9213e592341572474a2cc23445f516f822577a2d0284964607c8f2480b0dc214562364d612271a4cc21466832485d2672a6c62d4f6f314456',
+  '286ca0c0234360536573276e9dbe2b4e6b3f52602089b2d4598fb50000003468a1c1263f52566573344f8fad2a45582c3c4a3d488caa2436447a8a98',
+  '3f3d819f2637494f64773e4483a22d41552c41523d5391b12c455a3b4e5d375997bb2a495f2437473f3a7fa32b455b2032413f458bab294157374956',
+  '404283a12e465e2e404f3c4888a72d4c67404d603a4c8eaf2c516d484e653b5497b7294c633a3d543a488bae29495e65677a384b8fb218384cc8cbd6',
+  '1d679ab557bbee0000002d5c98b6355b7e555d6c2d70a8c52f5076454a5a297aaecb294f786e74831994bbcf6daedf0000002195bcd0466a8f2f3d59',
+  '209abbca39597a3644601fa5bdcf4261863a48651ebfcfe346769837455e1cc3d6e8407e9e1d3046209cbecf386c8a444a591bb2d1de4e7f9d545c72',
+  '15cae0e84f819b00083318bccfdb537997a7b5ca12e3ecf2a7c5e15c83a61ad5e6ef7ea3c1ccd6e019cde1e786a8c599a7b419d4eaee7698b5a2b3c1',
+  '1acde2e77b9bb8b6c7d418c9dae084a1be899fb21cc9d9e27a9bb599abb920bfcfdb6e95accbd6de20bfd2dc6e95aba6b3bb15cfdde37ea3b23a6d90',
+  '1fb1cad07ea8bca0b6c621b8d4da759cb09bafbd24afced46d96aa9db1bc24aac6cf6f98ab96aeba23acc6d07199aca0bac323b1c8d4779db293aab3',
+  '24b1c6d37da3b9a7b8bf22aec5cf789cb6aab8c017cad9de95b8d05978921dc5d5dd7e9db7a7b4c415d9e4eb92afc58396ae1bcbd8e199afc5cdd0d5',
+  '1ad6e1e9a2b2c8c6c6cb16ebf2f79aa6bbcaccd716e5ebf1a9b3c5c8c8d313eef3f9b1b8c8c1c4cf13edf3f6bec3cec6cad210f9ffffb6bbc1c9ced5',
+  '0ffdffffbbc1c7d0d3d70ffaffffd0d3d8e4e4e60ffaffffd3d6dad3d3d50ffbffffd2d3d7dcdcde0cfdffffcdcdd3cdcdd01cf9fafde7e7ebf5f5f7',
+  '0ffdffffcbcbd0d3d3d50ffaffffcfcfd4d8d8d90cfdffffdddfe4d1d1d30ffeffffbdbfc3dbdbdb0ffdffffbdbfc5d3d4d410f3fefdbabec5d0d4d4',
+  '0ff9ffffbfc4cdc0c6c711f1fbfab8bdc8d0d4d410f6fffeb8bdc6cacfd11aedf8f7acacb8ffffff12f2fdfbd1d5dde0e2e511f4fefdbdc1c9c8cad1',
+  '13f1faf9b2b6bed7d9dd15eaf3f5c5c9cfd8d8dc14eef5f7c2c6cbdee0e314f1f6f9c8cdd1d8d8dc2ee3ebedc9c8cef5f4f414f2f7f9d2d3d7dcdce0',
+  '14f0f6f7d1cfd4e0e0e414eff3f6d6d5dbdcdce012f6fafdd8d7dce1e1e526f3f3f5f2f2f5e9e9ed21f7fcfbcac8cff4f4f921f6fbfacccad0ffffff',
+  '1df9f9f9e1e1e5dedee21cf8f8f9e4e4e7e4e4e71df8f8fae2e2e5e8e8ea1afafafce6e6e9e5e5e817fbfbfce6e6e8e2e2e416fbfbfcededf0eaeaec',
+  '06fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f4',
+  '00fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f4',
+  '00fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f4',
+  '00fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f4',
+  '00fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f4',
+  '00fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f4',
+  '00fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f4',
+  '00fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f4',
+].join('');
+// same, linking, left ring
+const NL_B_L = [
+  '00fbfbfbfbfbfbeaeaea00fbfbfbfbfbfbeaeaea06fbfbfbfbfbfbeaeaea07fcfcfcf5f5f5dededf09fcfcfcebebebe5e5e50cfcfcfcdfdfdfdfdfe0',
+  '0dfbfbfbe2e2e3d8d8da0ffbfbfbf0f0f2ebebed0ffbfbfbdfdfe1e6e6e813fbfbfce1e1e4e0e0e212f9f9f9e7e7e9e3e3e410f8f8f8e7e7e9dfdfe0',
+  '12f6f6f7e2e2e4e5e5e514f6f6f6e0e0e1e7e7e710fbfbfbefefefe5e5e50dfcfcfce6e6e6e5e5e515f1f1f1dddddde3e3e314f3f3f3d7d7d7dedede',
+  '17f9f9f9dddddddddddd0dfcfcfce3e3e3e2e2e013f2f2f2d7d7d3d4d4d315f3f3f2d9d7d3cfcece13f2f2f1d9d5d1d8d6d218eaeae6d0c9c7d3d2cf',
+  '17ebeae6ccc3c1d6d5d013efedeac8bdbcc9c4bf16eeeae7c7bbb9c8c4c016eeeae8cdc3c0d6d2d113f6f3f2d3c9c5c5bfbc14f5f5f3ded3d0e5dfdd',
+  '11f8f8f6d3c9c6dbd3ce11fbfbf9d2c8c5c7bdb914f2efedcdc1becac2c015f0efedcfc3c0d0c7c614f3f0f0cec3c1d7cfce13f9f7f6d5cacacbc2c1',
+  '13f9f9f8e0d6d6e1d7d615f2f1f1d5ccccd3cdcc18eeededd3c9cadddad916f0f0f0d8d0d2ddd9d918f6f6f6d8d1d2dbd9d816f3f3f3f0eaebe4e2e0',
+  '16f7f6f7dedadbe0dedd19efedeee4e0e1dcd9d919eceaebd8d3d4e7e2e31de8e6e7d5cfd1dad5d71deae7e8d2ccced8d3d31dece9ead4ceced5cfd0',
+  '1fe9e5e6d0cac9d0cbca20ebe7e7cdbfbdcfc7c51de8e2e0e0c7c0c9bcb920daccc7cdada0d9c9c226d0b9b0a38271c9bcb528dabdb4a985727f6f68',
+  '29d7b9b1b68f7b77635b2bd1b1a6a1786489756d2fc19b8d9a716079665e2fcea796946a5a7860592fc89f909368587a5f5932d9ae9e8b6151745c55',
+  '31cfa4949d6f5f8e766f2dd4a99aa16a5a76595030be907fa06e607b615931cc9c8d87594b755e5633c19282835b4c79665e34d5a999795648bcaca6',
+  '29d3afa2916353644c422bd3aca08a615086706627c5a3978a5d4c735c5227d4b0a3895e4d89736926d3b2a88c6350836e6324e0c0b8996a576b5449',
+  '23d9bcb19a6b59866c6222dabdb39769599d807723cdb0a58e6354785c5424d6b7ae8b6254ae928b3bdde7e5dfe8e5e3eceb36e0ecebe4eceb8e8487',
+  '37d9e6e3b9b1b08d545538d6dfdd22000065220839e5e2e0280000803b153bcbbfbd400000a57e303dd0beb95b1300a678443dc9afa3682100d7a997',
+  '40c8ac9c7b320fc48c7043b09586904528d9b18749b1998a884421766b4d4bb298839a6140888d774ab69980946449a29e844ab7a081987057a49477',
+  '47b098799f7c5caa977d49b4957a9e7d58aa947b4bb58f75aa8a66ac947b4ba97c5ea78967a48b7450a17151aa8b6d917a6556a57156a7866b7d6453',
+  '5b9f6e54a487696e554d609b6e5193775ab0978e7499725085684fb9a8a77a9f7754836753f4e8e581a27859785c4ba9a2a669a87b637d5d44ffffff',
+  '51b1856667412fffffff6ca07556d9c7c5e1ccd32ec1a593a577609270662ec2a49ca77762ead3cb20d8c1c5be947792543e2cc7adacb28169d4b1ad',
+  '26cbb6afa57664b9918b1cd1c3b8946857bc857e25c5b2a6a67362af969b1addcecd9b6449cc989429cfb5b1b47963a6a4a921cfb8b2a3624ef5e9e6',
+  '29cab2a7ad7066b1a3a418e4d9d582423ed1967f2dc2a39cac7d75b5939d15e6d5d2c6937d49000036bd988bc78a8bcaadb92dc8a5a0b77b6ab38388',
+  '21cdacb1c096796b000037b18c84aa796ba87a7820be988dad8d8f3e000045ac7b6d9b6d66ac999844ab78699d6e65b39f9d3cae7a6d976559b29182',
+  '33bf9287a16956a6746238ad7e749b614daf7e6e38b783799a5d4b93605530a77467a668588d49433da6715e985d538259603da369579d665adbbfc6',
+  '279d61528a5540ba796f309d5842a16a5a9e727529964131a06f59bd868625954135915d45c6959122b26053905842c6938c21be786b965c42b47d77',
+  '20bf87869c583baa6c6a20dea7b0924030b5787420e6b6bd99453fc089811cd9b1b9aa62569b5c531bdeb6bea96253ab706a1cddb4bcae675bb27774',
+  '1dd8b2bba3635abe8a8f1adeb9c4a8685ebe898b19e1bac4a6665ab77e7c17ebc3cbb6786ab7706e1bd7aaacae7364c88f9012dfb4b6be9078480000',
+  '23bb7d77bf6a64e19eaf279d4f4bb56968cf8493318b3a35a86c6dbd828a278a3931a8776d8c282e31a65b56a36352d0999f3daa6357aa7167c49593',
+  '46ac6f63a56c64b287894baa6f6fa46a68b48b9544b171769e6567d3a9b949b570709f6062c2959f43b46e67b16b6a9a5e5f45c17a70b56b699e6158',
+  '5ab86f66ab685fc2a0a649b47066ae6461a8786f3bb57970b973725503004fb3756f8c4d43aa7d8160b47069884f48daaeb665ad6459995b54c0969f',
+  '66bf776cae6d62c6adb467b0645fa66455fffeff40bf7777b06465bf88853bc37274ac5f5bae6d793bde8d8cca7574daa5b434c6817cb66261ce8a97',
+  '34be7d78b0635ecb8f9733ce8c88bd7168e3a7a835bd7b79b66563ba808134c08882b67774ac6e7321cd9893b1866d36000067a8645aeac0c9dec1e1',
+  '66b15f5adbacb1deb7c95fb85f54c484856e3c4858d0746ad1787894585f50d4817ac96660f5c6db4bb96c6a9a403ce6b5c54abe727195423df1bfce',
+  '63ae6661b16564ffecff60b37069b9706eb17d9658b36660ae6562ab707a5fce7c78c17d7acc89865ab96763ad6664ad6d6b5ab15b53a46261b07571',
+  '58ba5f587e433f8a525567bb58544d1712eec5d27cdc78779f5d5adebbce7fbc5452ac605dc39cb085c96f67c47877e5bcd680b45e56b06c67aa7a9a',
+  '70b16157a2625bdeb2c296a45a4e9e6865d5b6e18ea55c528d5651e6d0f096945244733c3acbd3ed4d9f5f536f332691635e4da25d4cac656491625d',
+  '4da66254a7615c91635e4da66254a6615b91645f4da66254a5615b9164604da66254a4605a9165614ea66355a2605a9166624ea66355a15f5a926763',
+  '4ea66355a05f599267644ea663559f5f599268654ea664559e5e599269664fa664559d5e589269674fa664559c5d58926a684fa664559b5d57936b69',
+  '4fa765559a5c57936b6a4fa76555995c57936c6b50a76556985c56936d6c50a76556975b56936d6d50a76656965b56936e6e51a76656955a55946f70',
+  '51a76656945a5594707151a76656935a5494707251a7675692595494717352a7675691595494727451a767569058539472754fa767578f5853957376',
+  '4ea768578e57529574774ca768578c57529574784ba868578b575295757949a868578a565195767a48a8685789565195767b47a8695788555196777c',
+  '45a8695787555096787d44a8695786555096797e42a8695785544f96797f41a86a5884544f967a8040a86a5883534f967b8140a86a5882534e977b82',
+  '40a86a5881534e977c8340a86b5880524e977d8440a86b587f524d977d8540a86b587e514d977e8640a86b587d514c977f8740a96c587c504c987f88',
+  '3fa96c597b504c9880893fa96c597a504b98818a3fa96c59794f4b98828b3fa96d59774f4a98828c3fa96d59764e4a98838d3fa96d59754e4a99848e',
+  '3fa96d59744e4999848f3fa96e59734d499985903fa96e59724d499986913fa96e59714c489986923fa96e5a704c489987933fa96f5a6f4b479a8894',
+  '3fa96f5a6e4b479a88954caa6f5a6d4b4795849249aa6f5a6c4a469d909d42aa705a6b4a4671576040aa705a6a4946735b613eaa705a694945947c7f',
+  '3daa705a5c3b3777595832aa705b89654e2f000043aa715b77452bb3999f36aa715b9e6c54bb867936a16850bb806cb87d7335aa7256c88776c07e76',
+  '34c5927ed69484d99b9332d8a796cd8776d7a59740d09785d49b8ae7cec83bcf9989c69685c39b8d38c48878c8a08ac9988c32c2836dc99f87c79a87',
+  '2dbf795cd2a18dc4a1872dc37963cc998aab92792dca907ec8907bcdb5a12be1bfadca8967e9cfcc29f0dbccb45d30e7e0d842f8efe7d29c82ddad91',
+  '42fefcfcd7ac9bd4a4834bfdfdfce4d3ced2a391fffdfdfcfefbf9e7d8d41cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd',
+  '1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd',
+  '1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd',
+  '1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd',
+  '1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd',
+  '1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd',
+  '1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd',
+  '1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd',
+  '1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd',
+  '1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd',
+  '1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd',
+  '1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd',
+  '1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd',
+  '1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd',
+  '1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd',
+  '1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd',
+  '1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd1cdfd7d8cbb7b7dcd0cd',
+].join('');
+// same, linking, right ring
+const NL_B_R = [
+  '00fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e9',
+  '00fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e9',
+  '00fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e9',
+  '00fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e9',
+  '00fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e9',
+  '00fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e9',
+  '00fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e9',
+  '00fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e9',
+  '00fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e900fcfcfce3e6e9dee3e9',
+  '00fcfcfce3e6e9dee3e90efcfcfce3e6e9dee3e912f8fafab9bec7c2c8d018e7e8eaa7b3c0a5adb51be6e9eeaec1d09ea8b52ef6fdfdeffdfdd4edec',
+  '4bf8ffffc1dfe1a7d5d64df4fafc93b1bd80aeb12fd1e5f100305a004849ffc6e1f1256ba10d698233bcddeb2362908db2b73199c5d2176287a2b9ad',
+  '3a94c9d65484a496cbb73b7aa7b76486a092c0b0398faec564849c95aba53998b8d4799eb06f6d713884afc57aa7b97c6e7a386ca6b2649dae7e7a8c',
+  '3775adb5609caa7877893562909e5d94a170778439678ca9628a9d7378843d7ca3c86585987979843c6b9ab85f7f95c7c5d13e467f9165849c666573',
+  '3a4e88945f7f956b6e80421e50605f6e856d747d1e6e89956c799a000000336e89954b5367454f66366e88953f43564d4f65376d8895464a5e4e5063',
+  '2e6d8895464b5f13162c366d8895474c604141503b6c8795474c60898c953c6c8795474d61403f4f3c6c8795484e624c4b5a3f6b8795484f634c4c5b',
+  '396b8695494f634d4d5c396b86954950644d4d5d396a86954951654d4e5e3a6a86944a51664e4f5f3a6a85944a52674e50603a6985944a53674e5061',
+  '3a6985944b53684f51623b6985944b54694f52633b6884944c556a5052643b6884944c556a5053653c6884944c566b5054663d6784944d576c515567',
+  '3e6783944d576d515568406783944d586e515669416683944e596e52576a436683944e596f52576b446682944f5a7053586c466582934f5b7153596d',
+  '476582934f5b71535a6e47658293505c72545a6f47648193505d73545b7048648193505d74545c7148648193515e74555c7248638193515f75555d73',
+  '49638093525f76565e7449638093526077565f7549628093526178565f764a6280935361785760774a627f9353627957617847617f9353637a576179',
+  '45617f9354637b58627a42617f9254647b58637b40607e9254657c59647c3d607e9255657d59647d3c607e9255667e59657e3c5f7e9256677e5a667f',
+  '3b5f7d9256677f5a67803b5f7d925668805a67813b5e7d925769815b68823b5e7d925769825b69843b5e7c92576a825b69853a5d7c92586b835c6a86',
+  '3a5d7c92586b845c6b873a5d7c92596c855d6c883a5c7b92596d855d6c893a5c7b92596d865d6d8a3a5c7b915a6e875e6e8b3a5b7b915a6f885e6e8c',
+  '3b5b7a915a6f885e6f8d3c5b7a915b70895f708e3e5a7a915b718a5f718f3f5a7a915c718b607190405a79915c728c607291425979915c738c607392',
+  '43476e885d738d617393445678995d748e617494465d7aa75c7286617595475b7aac5e7498627696496288b16577a65f748f4a5f83ad6e7db2797ea5',
+  '4c6480b46f7fb78077a559667eb77880bea686b357808eca8785c4caa0d3526679b48d88c0b48cc142647fb76c89ad7d6fa13c5f8db5648daa7b81b1',
+  '3d5184a35c82a77d87b7315a87a56d82b04252943b5a80a47383b0524e803c587fa46881ab8f86af2b618aae5981a93a4b922b618db5587dac778bbd',
+  '2c658fb85a7ab2a8b7dc1e7da4c986a0d122499c26688db66375ae8591ba20688bb8687ab26e84b5266188b85e72ae7b8bb7305a86b35b75ac989ab8',
+  '2c5689af4f76a8a4a8cd1b6696b86999ab001a822b598aaa557ba6adb9e2305f8da95c78a57a89b1305a86aa697dae667da9326382b76b7ab86e81b3',
+  '3c6c8bc57386c6929bc93c4a77a35a7ab08794c5484b87a95077a9d5c6e54842759a4a75a3baa1c96935618e4a63919c37632f5481a7869ad6000029',
+  '3b4d7eaa6e86c1253e5f494f81b53b578c6b688b4b4a80b32a497dcec9e4404d88b64c74ab888fb53e477caf5679b256668e36608cc6788ed07184b3',
+  '35537cb85f71b5707cac33547eb76076b27b87b1355380b25d78a97885a6245883b334578995b4e12b5f8db9506ea67c8fa2215c8eb5254486759cb6',
+  '1e6692bd2e548c4a69981f7194c130588d6b80b3206b92bf2c548a8399c620628dbd3c679b91abce1d6fa0ce5680b2789dc51d6292be4e78aa698db1',
+  '1d6897bf527cae7a9bbb1c6b9cc15078aa6587ad1e6595ba5576a993aed01f6797b85174a07d9bba226498b54770967fa0b5255e96b3517fa18eadc3',
+  '266496b85f84b465809f286690c05b79b86b7c9f2c6389c05977b17482aa466b98cf54679e9d9eb94b5381b856689b70738d5e527fad5c718dacabbd',
+  '604d859e41526788889d612f6b81383a5046485f623a6fa21f20373c3f55634a7dc7363c4d363c50653f7fbc3b43563a4055652b769e3f495a3d4253',
+  '5e3f88a5303c4b9297a64f337191314153414b5b433b73985b67940000004f4c87b55050833f45534f4686b9425978373f4c4d31749e3e58703d3f53',
+  '43468aa73d5a6d595e6f3231748b5277910000003e356b923f526e4a4d5b3b3865983e5c773f42503c4479ab295365434c593b3679a0376276313c4b',
+  '3b4c8daf4463806b707f24447a9e5b95cb000000324d7ba94c6895403c4e32688fc8536ea84044522d5e90c3456fac3a3f52364083ac3c638646495b',
+  '3c5294b5365668787c923c3e7597415b7343475e4543779f434c717c7f9251558ec43d4761727688584d8dc0404e6053586967367da33f4459828890',
+  '673f829d434d5c404a567440799430394a88909c724f7dad424f60343a4f945683c14249588b8593944886b9454c5b8c8996943c80a5484d5e807f8c',
+  '9340839e494b637a78858f3a70934d50697776848d3f6f9f4c5b6c6f6b7fb43e77af48515a6f5e6c834281af456370645e727a5c89ad536077535163',
+  '725c89ad5061784d4c636a5c89ad4a607956506a675c89ad4f6581615a70655c89ad414d61676b82645c89ad414d61687388615c89ad414d61727b91',
+  '495c89ad414d61616f814e5c89ad414d61454f5b4e5c89ad414d61454f5b4a5c89ad414d61454f5b3e5c89ad414d61454f5b395c89ad414d61454f5b',
+  '375c89ad414d61454f5b355c89ad414d61454f5b355c89ad414d61454f5b355c89ad414d61454f5b365c89ad414d61454f5b1eacc8d659819c626b80',
+  '1ab8cfda4e748f4c5a7619bacad7698aa599aac016d9e3ec9cb9d48ba6bf1bd1dfe990b0cac2d0db1accdce58faec695a6b41acfe1e789a7bf9eb0c0',
+  '1bcadbe28da9c1afc2d01bc5d4dc8da8c095aabb1cc6d4de86a3ba98abba20bdccd881a2b7becdd721bbcdd77c9fb2a2b1bb1cbecfd77da0b296b0c2',
+  '20b2c8d089aebf9fb6c622b5ced681a5b69aafbd24afcad17ca1b19cb1bc24abc4cd7ba1b195aeba24adc3ce7ea2b39cb6c123b0c4d180a3b692aab4',
+  '25b1c3d187a8bca3b6be23b0c3ce85a4baa5b5bf1ec0d1d98fadc49aacbc1dc5d3db8da8bea4b2c319cfdae397b0c5a7b5c51ccad4dea3b7cac6ccd3',
+  '1ad4dce5abb9ccc2c5cb16e5e9efa9b4c5c7cad516e3e6ecb3bccbc4c5d114ebedf3bcc2d0c0c4cf13ebedf2c4c9d3c6cad210f4f7f9c1c6ccc7ccd4',
+  '0ff9fbfcc8cdd1cfd2d60ff7fafbd7dadedfe0e30ff7f9fcd8daddd4d4d60ff9fbfdd8daddd9d9dc0cfafcfed6d6dbcfcfd20ff9fafde7e7ebf5f5f7',
+  '0ffafafdd4d4d8d2d2d50ff8f9fbd7d7dbd7d7d80cfafcfde0e2e5d2d2d50ff9fcfdc9cbcdd6d7d70ff8fcfdc8cbcfd0d2d210f1f6f7c4c9cecfd3d3',
+  '10f5fafac7ccd3c3c8ca11eff4f4c4c9d1d0d3d510f2f8f7c4c8d0caced112eef3f3c8ccd3e4e6e812f0f6f6d6dae1dddfe311f1f7f7c7ccd2c9ccd2',
+  '13ecf2f2bfc4cad4d6da15e8eeefcbd0d5d6d8dc13ecf0f3cacfd4d9dbdf14edeff3ced3d7d5d6da1be6e9ebd3d5d9e2e3e514f0f2f4d6d8dcdadade',
+  '14eef0f3d5d5dadddde114efeff2dbdbdfdcdce112f5f5f8dedee2dfdfe416f3f3f5f2f2f5e9e9ed13f7f7f7dcdcdfe4e4e813f6f6f6dfdfe2eaeaee',
+  '10f9f9f9e1e1e5dedee20ff8f8f9e4e4e7e4e4e710f8f8fae2e2e5e8e8ea0dfafafce6e6e9e5e5e80cfbfbfce6e6e8e2e2e40bfbfbfcededf0eaeaec',
+  '06fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f4',
+  '00fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f4',
+  '00fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f4',
+  '00fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f4',
+  '00fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f4',
+  '00fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f4',
+  '00fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f4',
+  '00fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f400fcfcfcfbfbfbf2f2f4',
+].join('');
+// tangled web wash (loading): 45 rows (θ = -44..44°, 2°) × 7 radii (440..890), left ring
+const WEB_A_L = [
+  'fdfdfdfdfdfdfdfdfdfdfdfdfefffff8f7f4fffffffcfcfcfcfcfcfcfcfcfdfdfdf8f8f7ece8e4fffffffbfbfbfbfbfbfbfbfbfcfcfdf9f9f9fffffffdfefd',
+  'f6f6f6f6f6f6f6f6f6f6f6f6f2f2f2fffffffcfbfbf7f5f5f7f5f5f7f5f5f7f5f5f5f2f3fcfcfcfefefef5f4f4f5f4f4f5f5f5f7f6f6f9f9f9fbfbfbfcfcfc',
+  'eae7e8eae7e8e9eaead6c5c7ede6e7f6f6f7fefefee5d6d5e5d6d5e5d5d5d7bfbfe9dbdaf2ecebffffffd6b2aad6b2aacfa69dd4a098f1f8fbffffffeee7e7',
+  'c08873c08873b46f51d39487e7e0e6f9faf9f9fafaa9694aa9694a7c3800eb8a89ede9eceae5e5ffffffc88871c88871d08b6fa3280debdde6f2e5edf3ecec',
+  'ca8e7dca8e7dc68373c0624b9b3c0afcbcd8ffffffd4a798deb4a6bf6f58dda392ecc9c1fffffffeffffd1a291d3a390af5838c6857aa94a26f4fafeffffff',
+  'd4a899dcb1a1b65f41b06245eaa89dfcffffffffffcfa296daaca3b86645d68a71ecc8bdfffffff3f0f1ca988dd6a099a45236eda793ecc2b6fce5e9fcffff',
+  'c79384ca9283b66241d17b6dfce3d3df8b7cffffffc8917fca8f7ab66742e18871fffaf9fffffff7ebe5c9927fdb9d8a9b4120e68e70efc6c2fffffff6c7b9',
+  'c7907ccb8d77c76d47ca7853e9b0a6fffcf1e18871bc8671ba7d65b8663af1a083e29f84fffffbfd9573c58f7dd29480d17a5be0896af19985fff0e9ef9e7c',
+  'c38f7dca937f914121c86944f6b1a5de987bf5b7a1bf8b77c88e78994e2ae17e54d79076fbba98f2cabfc18b75ce8c76a05930cd7d5bd48b6af2b89eeec9b9',
+  'c48d77cc8e74a3532ace8f6bdc9070f3dacce5c9c1c08b75c186718f441dd89177e8b6a4f0e0d9f3e4e0ba896aae7a50c37b56c8816adfb5a4ecd7d8fdffff',
+  'c08f76b07659c88465cd9a8cddab97fcfffff3f0f1d6af9edbb4a0c88d80d9b8afe4b9b0fcfeffffffffcca496cca496c4907dcfa99febe3e4faf7f6fcfdfd',
+  'd0b4aad0b4aad0b0a5e4d4cee9dde1f5f3f5fcfdfce5d6d2e5d6d2e6d6d3d5c1b9f4f2f3fefefefefefee5dcd9e5dcd9ded3d1e8e3e1f3efeffefffffdfcfc',
+  'ebe4e3ebe4e3e8e0dfe7dfd9fffffefbfaf9fbfaf9f4f0eff4f0eff7f5f4dbd2cffffffffbfaf9fbfaf9f7f6f4f7f6f4f6f5f2f9f9faf7f6f6f7f6f6f7f6f6',
+  'fafaf9fafaf9fafaf8f9f9fafafafafafafafafafafdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfd',
+  'fdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfd',
+].join('');
+// same, right ring
+const WEB_A_R = [
+  'fdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfcfdfdfcfdfdfcfdfdfcfdfdfcfdfdfdfdfdfd',
+  'fbfbfbfbfbfbfbfbfbfbfbfbfafafbfdfdfdfdfdfdfcfcfcfcfcfcfcfcfcfcfcfcfcfcfcfcfcfcfdfdfdeff2f4eff2f4e8eef0f3f5f6f7f9f9fdfcfcfafbfb',
+  'eaeef2eaeef2f8f7faa2bbd0d6e0e9e4ecf1f1f7f8d5dae5d5dae5c7cbd9ccd5e6dde3ededf0f5ffffffcbd6e6cbd6e6cddaecb2c0d8abbcd8fdfaf9fafbfb',
+  '8da5c38da5c35d82abcfd5e799a6d1fffffff2f3f66f80ad6f80ad4b4c9091bbead5cedcfbf8fbfefefc7893c07893c07298cc001c52d1ecff9bb7d1ecf0f5',
+  '86a5ce86a5ce83a4d12d75b800004295c6deebdcfa9fb9d5a2bdd56f94c4718dccc3d9f4ffffffffffff99b3d291acce6c93cb87abceb3c4e3f1f4f6edf0f4',
+  '93b0d190b2d15e83bf95b4e17fa3cdcfe0e8fdfbfb88aad17da7d2557dba6a97ca88baead7e8f3e2ecf2769ac9628ec75e8acf72afda0e4d90cbf4fdb5dce8',
+  '7595c66488c56b96d7589dd891c0de80cbe282c1d0809ecb81a1d04075bd5c9ad173bfe06eb9d5aee4ef7c9dcc6e95cd558bd23f85c19cdbfc93d7f050bbb1',
+  '7d9dcb84a8db306eb9357fbc7cc7e394e9ef0088767596c76890cf5285c24183c072c0e187d8e307917d7c99cd7694d674a6e32971a679c2ea84cedf1b9491',
+  '7b96ca6b86c56394d94b8fd36eb5e29ee4ed5ab5cb7a97c96b8fca6d95d62766a069a6dd7fc1d98ec7e17d9ccd7296cf688fd13c7ab267a5e09aceed9ecce6',
+  '7493c75a7ebc6f99d95886be88b9e6b8dcf4b6d7ed7696c86188bf658dd44073b6add9f9c8e6f8d3e9fa7a9ccf6991cb6189d16795d3a9c9edd7e8eeb2c7e9',
+  '7c9ecb658ebe7396d94273a9a6c6e3e0e3e9ffffff90aed187a9cb7096cfa2b8d39cb8d8fffffff8f8f895adcf95adcf7897bfb1c2e0e4e4e8fffefdfefefd',
+  'bdc8ddbdc8ddc2cbe0b1bbcbf8f9f9fdfdfdfdfefec0cbdec0cbdeaebcd5d7e2ecd0d6def9f8f7f9faf9bfcad9bfcad9b0bdcec4cae0f9f9f8f4f4f6e7e7ee',
+  'c1cddbc1cddbacbdd2faf9f5fdfdfcfcfcfcffffffcbd4decbd4dec0c8d4bfcedcfffdfcfefefefcfdfde8edf0e8edf0f1f5f6e1ebeefffefdfdfdfdfdfdfd',
+  'f0f1f2f0f1f2eaebedf7f6f6eae9f1faf9f9fdfdfdf8f8f8f8f8f8f8f8f8faf9f9f1f4f5fffefefcfdfdf5f8f8f5f8f8f5f8f8f8fbfbc1dadffffffffcfcfc',
+  'f8f9f8f8f9f8f8f9f8f8f7f7fffffffbfcfcfbfcfcfdfdfdfdfdfdfdfdfdfefefefdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfd',
+].join('');
+// combed web (linking): colour per 0.05° of fibre angle ψ (about the convergence point) from -34°, left ring
+const WP_L = [
+  'b4a293b4a293b4a293b4a293b4a293b4a293b4a293b4a293b4a293b4a293b4a293b4a293b4a293b4a293b4a293b4a293b4a293b4a293b4a293b4a293',
+  'b4a293b4a293b4a293b4a293b4a293b4a293b4a29355574b82674aa98b71c6a898c3aba7ccbdabd9d1bbe4dbcbf7e0d7ffe9e0fff9f4ffffffffffff',
+  'd1bcb8736762987572de9f9fffece9fffffffdddd7906e6e4421207e5d5be6c3c3fff6f9bda0a16a4f4f624445b0999ae8d8daf6e9ecf2dcdcf7dcda',
+  'f9e7e3fdf6f4fffffff0ddd9a4918e695c576c5d568d7c71b7a099dfc0bcf8d0c9ffe5dffffffafffdf7d6b4b0a77f7bc79896e8bcb9c598968e5f5f',
+  'a67876e5b2b3d79fa36b2e321900004a0b10dc9aa0ffeff7e1aeb9491a24380714ad7b88ffd3e1d7b0bea0858ca58c8dd9b6bcfcd2e0ffe9f4fffeff',
+  'ffffffffffff90777f5a3d469a8387fdf3f5f6e2e8938086483d40786a6dcbbabcf7e5e9fff4f9fff5f9fff7f7fffaf9fffcfdfef5f3fee9e2fce7e3',
+  'fcf2f5fff6f3fbe5d4c3ac9c9379739b7c71bf9b85e8bea6fdd8c7f2c4afac7c63652f175721077d4628a86b4d9a583971300e7d3d1bb97b5be0a384',
+  'ca8a6ea25b40954d31b16c52dc977eeba088d48b71ba6e55b66a55b16753a96048a15339a75640ad5b48af5d46a24b2f882e176a18036e220b944837',
+  'b16353a75a4b8134256e1e127f3425a3654fad7463a3635fa15f5aaf786bc9998dc4958c976d66805c53a8857ee3c3c1ffe4e5fff0f0fff2efffefee',
+  'f8e5e8f3e1e5f7e3e6f1e0e4dfced3cdbdbfd3bec2e5cbd1ebd2d9d5cbcdc9c6c7dad1d3f6e5e9fff2f8fffcffffffffffffffffffffffffffffffff',
+  'fffffffffffffffffffffffffffffffffffffffffffffffffffbfffffefffffffffffffffff9fffff0f8fff3fbffeef4f8d4d8d8afb4c6959cc6949a',
+  'cf9da1d49da1ce9197c18489b57f84bd888ec28d95b68f91b29392c9a6a6e6bcbff4d3d6fae6e8fef2f2fff6f6fff9fafefafcfefbfbfefbfbfffdff',
+  'fffffffffffffefdfbfdf8f6fcf8f9fefefefff9f8eee2e3d8c7c6c5b2b2c4b3b3c8bab9cec2bdd5c4c0cfbebbbdafb0bcacadd6c5c6f6e7e8fffafb',
+  'fffdfdfef9f8fef9f9fef9f9fefafbfffbfbfff9f8fff7f7fffcfcfffffffffffff9f3f3f0e6e5eee8e9f7f1f2f8f2f3f3e7e9e8e0dfe4dbdbdfd4d2',
+  'e3d1cff0e4e2fffffefffffff0e0e0c7b6b5c0b4b1ddd2cfe6d9d7b9b0b09a8e8eb3a4a2e5d4d1fbf0eef5eeeee9e1dee5d9d8f0e7e4fcf5f5f1eaeb',
+  'd6cdccc9b9b7dbc1bdf7dbd5fff8f7fffffffffbf6e1bdb7ac877e9c7a70b89c94ddbeb5e1b6b0bd8c879f6c62a46e60bd867bd8a79eeebeb7efc1b8',
+  'e0b5addeb7aeebc7beeecbc2dbb3aebc938db4837ec9988ee0b4aaddb7adc0928b9d6863966156a47367ba8578d19f90e6b9aee3b9b1c69b91af7d6f',
+  'aa7564966a5b643e364c241d7a4c40c69c8efcd7cbffece4fce4dde3c9c4ddbcbcfbd6d4ffe1d8e1c1bab29392a48987a28981937770937b79beabac',
+  'f0e0dffff5f1fff4edfff5f2fffdfcfffffffdf8f7afa3a48572729c8d8ec9c0c0f0e5e6fff0f0f8eae7f0e6e3eee5e8e9dee1ebdddcf3e3ddf8eae8',
+  'fcf2f4fff8f9f9efebf0e2deebdbdae6d2d5d5bebcc3ada4c7ada9e2c8c8f9e1dffedfdee1bebbb699918f756c6748465e3f3c91726cd4b3a8fddbcf',
+  'ffefe9fff9f1ffeddde4d0c1d6b7b2d9b8b4ebcec8ffe8e0ffe2d9deb5aba7817895726b9d796daa7e73b78178c29183d9ac9cf1c6bbfad0c3e7c2b3',
+  'd7b2a4ddb5a9e9b8acdeafa3d6aba4ddbfb6edd7cef9e1deffe9e5ffeee9ffeeeefef1f5fdf2f1fff3f4fef1f1e7dbdec5b7bbc2afb5e3d0d5fffdfe',
+  'fffffffffcffcebdc3aa9ea3c4bcc1f5f0f3fffffffffffffffffefffbfafffdfffffffffffffff5dedfcbaeb0b89696b18b8ab98e8fd4a6a1f3c2ba',
+  'fdd2c7f3c7c3dcb7b5cba7a7b9928ca37f739b786fbd9b96eacac6ffefebfffefafffefefffafbfffafdfffefffffffffffefffffefffffefffffdfd',
+  'fffffffffffffffffffffffffffffffffffff8f0f2b5adaf918385af9696ebcecefffdfffffffffef1f0dacecfd5c8c7efdddafff8f4ffffffffffff',
+  'fffffffffffffffffffffffffffffffffffff2ecebb7b2b4b0acb0d4cfd1f3f2f2fffafeffffffffffffffffffffffffffffffffffffffffffffffff',
+  'ffffffffffffffffffffffffd1bdc1897372877574b7a7a8e4d2d3ffe7e6fff1eefff1ecfff5f1fffdfcfffffffffbf6b69594452c293b16149b6361',
+  'ffbcb8ffebe5fff7f1ffede6f1b8aeb07b6f9160589f7473dba4a0ffd9ceffdfcfcf998b8e544aa16a62e4b0abffd2cbf3c1bdc99f9ab28c89bc8d87',
+  'c5928dc99896e1aeaeffc8c5ffd5d2ffe4e1ffebe8ffe2def1b7b1ba7b77995c5aa66864cd9185edb4a9f7beb6efb3abd1978c9b5f4e672511762613',
+  'c16c5ff9c6bcffe0d1dc99848036163b060040070086452fdd8e80ffccc4ffe5dcffe0d6f4c4b8cf9a90d79388fbb0a9ffd6d0ffdfd8efada59f6159',
+  '7f3f38a46764d89b98d99995a3615b813b3477352d91574eaf756cc4857db57d75af7c6ed69c90ffd3c4fffff2fffff9fff1e4ffe4dbfff1e6fffef4',
+  'fffbf2f1dcdadebfbdd09997c4837ace9389e9c0b9f6dbddeed3dbf2c6cafdc5bbffd0c5f3cccbceb2b9b39397c39598f8c5c9fffaffffffffffdcd8',
+  'd5aba5b99492c5a3a2f2cbc8ffeae1ffefe4ffe1d4ffd7ccf8cac4ffdbd3fffff5ffffffffe2dca8887f8e6557ae7968cda393e0c2b8f4d3cefddad3',
+  'ffe7ddffefe2ffdfd3e8c5b9d6b4a6cca597d7b0a6f5d4cdffeee9ffd2c8de9d8ec18780bf8f8dcea5a3dea8a3cc8b80b97e72b5847ecb9b96fad0c9',
+  'ffe1dcffe2dbfcc6bdc9998ebb847beca49bffd2c6fffdf2fff0e4f4bdb1bf8c82d59e96f8beb6ffc0b4dd9f94b87e74ba7b74d3958ec1857ca2695e',
+  'a76b61c7908bd6aba4c7a59ab08a85b58d88d5b1aaf4dbd1ffe8e1ffe7e3ffe9e5ffeee8fffdf9fffffcfbe5e4c8bec0b7aaacccb0adddc1bce8d4d1',
+  'feeae8fffefefffffffffffffff7f6fffdfdfffffffffffffffdfdffedebffe8e3fff4f0fffffdfffaf8ffded8e0bab2cea59cc79c95c4968dc38c7f',
+  'c69081d4a193e2b1a2e7afa2e2aa97e9af95f9b29bffbeaaffd2bfffe3cdffcab2d89578ac6443b16946d18662eb9d73e69464dd9264eca77df6ac7b',
+  'd08042984602803200a05824bf751eb16700732a003d0200470200834000b97532d49455d39555c68e4eb87f43ba7f46d0955cecad6dd8983e995700',
+  '5a18005b1900813d05a9642dc07b47c68352c17e50bc7849bf7c56c98f69c892519b5c005f03002f00001200001200003706007440069e6831be8851',
+  'd09863d49760ca9057c68d54c98b54cc8a51ca894fc7874aca884dcf8b50d69153d89053cf8b4eca864cce874ad38b4dcb8548bb773eb26c41b77449',
+  'c27731b059007516003500002800004f090092512ad08d72edaa87d490599b59096a27005c1b00692a007433006623004f0f004007004107005c1c00',
+  '8347129a62359c5f2ca0590b9c5700803800570d00500500742b00a05620c37240d7814de48b54e18d54ce7743b75b249c4206913c039e4d13bf6d35',
+  'd5824add874ce2894ce39151e19256dc8e54d68e51d58d4cd3894ad78d54e29a65e89c63d2853aa65b017e32006b21007e3a03a25f26b57438bc7a3c',
+  'c08148c98d5dd0915fb97b317d4700440b00410600672f00996a329d68317d460b6b37057b450d985d23b97f47c7945fb0783d834705753703854608',
+  '985b20bc7e45d7995bba7b307b4000581e006c3200965c25c1895bca9259a8701a703800511a005018005b27005f2b00551f005117005c2000683002',
+  '6f3904884e22a76542bc7c56af703e8642036117005f17006d2a03843c10a4572fc2714ad0835cd1855ed38862d68960cd8258c4784eb67043a96633',
+  'a35d2ab16d3bc48554cf8f5bce8e59cd8f5cdda16de3a56dbf814893561f7c3f097a3e048a5117a36730b2723bb37138aa6d32ac6f35b4743bb0713b',
+  'a76937af7039c78852dc9866e49e6fe7a374eca877eea97aeea979f1ac7df1ab80eeaa7feca879f0aa79eca575e19e71dc986cda976bd69466d29360',
+  'd58f60d58d5dd69363d59867ca8e5dbe8153bc7d4fb87b4bbb7e50ca8d61da9a72dd9f76e0a37ae1a377e0a178df9e75de9f77dba079dba17bdda27c',
+  'dda079d89e76d69d7ae0a78ae1ae92c39058894b004803002400002d0000521d007e4a199e6c44b38061af7b508b59066530004e1a00440d003d0400',
+  '531a0082460baf723fc68756c88b5ac78b58cc8d5ecb8c5eb676338c4a00641f005911005a1800632400753701944f19af6730be7942c6844ccc8954',
+  'd89058d68c53c77d44b96f37af6628a15919934e0b8f4f0c924e11904b0d87450482450584490d884c168c501b8b511f8d5529966238a8764fb68a64',
+  'b78e71bb967ec9a690dcb7a7ebcabef7ded2f5e0d7ecd2cbeacac8f0d3d2f8dcdcefd6d2dcc2bed1b6b1ddbcb5e2c0b7e4bfb9e6c4c2eecfcbf6d4d2',
+  'f5d2cfdcbdb9b2918f916f6b8d6964a07d77b89391cca9a5d6b7b3d9bfbbdfc4c1e8cec8ecd6d3ebd7d6e9d8d6ecdbd9f4e5e3fbede9fcededf6e7e8',
+  'efdedee9dcd9ebe3dff4e8e8f9ededfaf1f0f9f0eff6ececf5eaedf9eeeff4e9eadcd1d2c7b9b9c0b0afc2b5b6ccbdc1e1d2d2f5e7e6fff3f0fff6f4',
+  'fff6f4fff8fafff7f9fff1f1fcece9fdece7ffece9ffeeeefff3f2fff8f7ffeef0edd5d7e0c6c4e5cac8f4d7d9f3d4d7d4b7b7bd9d99c09d98c4a4a1',
+  'bb9d99b1968fbb9f9ccaafaed9b6baddbfbfe2ccc9eadad7f0e1dff6e8e8fcf0f1fff6f7fff8fbfffafdfffbfefffbfffffcfffffcfefffcfdfffbfd',
+  'fffcfefffdfffefcfdfefcfdfefcfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfd',
+  'fdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfd',
+  'fdfdfdfdfdfdfdfdfdfefdfdfefcfdfefcfdfefcfdfefcfdfefcfdfefcfdfefcfefefcfefefcfdfefbfdfefbfcfefbfcfefcfcfffcfdfefafcfcf9fa',
+  'fdfafbfcf8fbf4f0f4efebeef2eeeff8f4f5fcf9fbfcf9fbfbf8fafcf9fafcf9fafcf9fafcf9fafbf9fafcf9fafbf9fafbf9fafbf9fafbf9fafaf8fb',
+  'f9f6f9f8f5f8f8f5f9f9f5f9faf5f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9',
+  'faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9',
+  'faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9',
+  'faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9',
+  'faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9',
+  'faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9faf7f9',
+  'faf7f9',
+].join('');
+// same, right ring
+const WP_R = [
+  'f4fafbf4f9fbf5fafbf5fafbf7fafcfafbfcfafbfcf9fbfbf8fafafcfbfcfffcffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+  'ffffffffffffe1dde5b7b3b9a1a2a7ebe8f0ffffffe3dce67b8082b0b3b7ffffffffffffffffffffffffffffffffffffffffffe1e2eeadb1bf8f9394',
+  '9b9e9fbbbfc9d3d9e9d7e1efd5e0f1dbe0f1f4f1f4fffffffffffff4f9ffeaebfeedecffe0e2f8b6bbd79897b58e8eac9097b6a3abd1a4a9cd8388ae',
+  '5b638b515e845564876874998691b6afbcded8e3ffebf4ffd6dbf49fa1bc6d728f626c8a717b988691b0acb6d3d7dbf4cecfe59193af5b6584535d7c',
+  '5a607e5f6382616b8b8894b1c8d1e8fffffffffffffffffffffffffdfffffcfffffefffffefffffafffff9fffff2fbffd8e2fca1aad04d5977030f2a',
+  '0b0b291e2c5938497842517a535f84818db2c1c9f3d4dbffa4adda6c73a35a6091717eaaa7b9e3d0dcffbfcbfd7b89bf50548c3c3c75313c732a3c73',
+  '30407a3d4883343d781b2860182c6243558e6673af5564a135437f2b396e505a8e828abd949cd26e7cb746538b38406f41436f61618d9197bbd6dffa',
+  'fffffffbfcffe9efffe5ebfff3f5fffefffffffcfffbf9fff9f6fffaf7fff8f3ffe9e4f4ccc8dcaca6c09893b09b9bb6b9b8d1dbd8f4f0ecfff8f2ff',
+  'f1ebfee1e1fddee0fce6e7fcdde2f6b1bed76b7b9e293f682b436e647eac99bae4a3c9f391afe1859cd16c8dba3d6c932853823b5e95597bae658eba',
+  '7ca5d395bdeb9ac6f494beec95bde996bae88eb5e288aed98cacd484a1cf6387b44b729e537aa1638fb76496bd5590b1528fb274a1c399b1d8a7c0e0',
+  '9bc5e596c1e398b9da93b3ce8db4c691b5c9a7bbd0bbcae4b5d0eda5c9e2a0bed2a9c0d1c0cededce3f4e1ecffc0d5ee9caec8959cb8b4b7cde1dff5',
+  'fbf5fff0efffcfd3f8b8bdddb9bdd7c0c2dcb7b9d4a7a9caadb2d3c2cae5d0d9eecedcf5d2dffacad5ecb5bbd5a7abceaeb2d1b3b9d2b6bad9c3c3e7',
+  'd9d8f1ebecfaeef3ffe4e4f9ddd6f0e0d9ece9e3eef5f1f7f8f5fbe8e3edddd5e2ebe6efffffffffffffefe9f2d3d0dccdccd7d5d4dbd6d7d9cbcdd6',
+  'c8cad5cccfdad3d9e3d0d5e2c7c8dacfcbe2e9e8fff3f7ffdee4f0b5bac98f91ac8383aaaeb0d4fffffffffffffeffffdde3fbc5caddcaced7e3e9f1',
+  'fffffffffffff9ffffe7f0fde1e9f6e2e9f1dee4eed3dae8ccd2e0cad0d9ced4dcdae0eaf0f6fffefffffefffff1f5fce6e7f0e1e3ecdde1eadbdce3',
+  'd3d4dad9dadfeef3f6fffffffffffffffffffaffffecf9ffdae1eac5ccd2b7bdc4bcc5cee3edf4ffffffffffffe1ecffc4cee9c2c6dac7cad7c5c9d6',
+  'c3ccdbcfd6e6e6e9f8f2fbfff7fdfff3f9ffe8eefcd4ddefbdc7daa2aec591a0b48d9db09dabbfb3c0dbc6d3eec2d0e6afbdd3a9b8d0bfd0e6e5f1ff',
+  'fcfffffffffffafffff1f3ffebebf7dee0e9d1d1dbc4c4d1c8c8d2e0dde6ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+  'fffffffffffffffffffffffff5fdffd1dce8b5c3cba9b3bcbac9d1c8dbe4c3d5deb3c2cac5d4daf0ffffffffffffffffffffffffffffffffffffffff',
+  'f5f4ffdfdbebc5c4cdc3c7c8e7e8eafffffffffffffffffffffffff7ffffedfdffe1edfdccd3e3afb8c6a3b3c0bbccdcd8ebfdd9ecffb0c5d68c9caf',
+  '8a9ab2b2c5dee5f7fffffffff1fdffdaf0ffdbefffeafcffeeffffeafdffdfefffbfd8ee94b2c96d8aa46783a37c99be8cadd386a7cd7497bf6d8fbd',
+  '6e91bf6b8aba5978a63a5e852e59795e85a6b3cdf4e7fcffe3fbffcfeaffc3ddffc5defccae3f6c5e1f4bcd7eea9c1d893aac17e9ab77399bc81a6c7',
+  '9cbfdba9c3e27d99be45638933597c5777a07897c283a5cf88a7d191aedb9ebae6a6bfe7a0b7e192a9dc85a5d889aedb9abae38fa9d7657eb5436399',
+  '5477a8799ed290b1ec86a7e06990c65b84bd5f89c26996cb7ba4d886a9dc7da5d9709dd571a0d68bb1e39bbcec8ab1e172a6d576acd77db1da6d9fc6',
+  '4d86ab3b7a9a3a7b994489a65ca2bd70b8ce60a0b53a778d3b7b9280c3d7caffffdbffffbef7ffade1ffb3e2ffbdeafdc4effdc3eeffc5eeffbeebff',
+  'b2e3ffa5d4f193c7e57eb4d56397b949799b2f678a26638a36709d4d86b75a94be5794b85c99bd63a0c7609dc95f9dcc7ab5e093d2f89fddff98d6f7',
+  '9bd8f99cd6f794cef07bb8d75f9bbd4989a54c8ca872b2cc94d1ed91cfeb5695b50a4e6f001935001832004b693096b283c6e094cbe486c1dd86c4df',
+  '84c6e084c5e088c9e88ed1f08acceb75b9d95198bc307b9e277294337e9d4c93ab4f94b13c83a62a75993783a1509eb866b1cc6db6d565adce478baa',
+  '236b861159751f62854486ac73b5da8ed1f198d9f596d6f394d1f292d2f58fd3f48bd2f385c8e773b0ce538fac3172912c7191549ab985cae885cce6',
+  '559eba3e85a3589dbc70bed95fb7d03a8ca5175c7a024a68044c6b0760804e9ebf96e1ffaff4ff82c7f25098bd3886a34090b05aa6cb54a2c6307b9b',
+  '0a526e003f5c02527029809e53a5c082c4e192d8fa96e4ff92dafa80c6e860a9c7337e9a166381287e9747a0b563aec54c91b33280a44495b36fbdd8',
+  '9ce0fc9ae7ff8ddaf781cce77cc8e176c5e16db8d3509db33d899e4295a94498ac18697e00283f00102800395100738c4495b0528fa52872870c5d70',
+  '1c69804d96b262a7c44994ac4390a773bed39ae0f798e3f788d2ea7dcbdc6fbccc4897a74391a154a8b27ed0d997e1ed98e6f58adbea87d8e793e1ee',
+  '90dfed7ccad85ea8b84d94a55ba5b57bc6d47cbdd05290a51f65741b5d6c3c7b8b5b97a5246a79003c4919616e7db5c3aedceeb4e6fa91dfed78c6d3',
+  '90d0d9a3dae8a2dded97d7e894d7e499d9e499dbe593d7e297d6e296d6e59bdbea9edfeca4e3f1a7e4f0a4e4f09fdee883cad268afb65e969d5a8793',
+  '5c9aa76eb7c28eced9aee3efabe4f4a6e0f0a4e1f0a4e2f4a2dbf188bed26ea0b46da2b690c3dbb0e9ffb5ebffb0e4fca7ddf6aae5fbb2edffa8e1f6',
+  '84becf4c87982869783b7d8670b2b89ee0e6a5e7f1a6dee89bd3e099dde7a9ebf4b3f0fbb2eefaa9e8f499dbeb81c1d264a6b3589aa65196a6498fa4',
+  '4e8aa1639eb37ebed28fd5ec8dd2e87cbdd260a0b65393ab4b8ea2337d900f5d7208556d216c81347e92357c994b90ad76bbd67fc2dc4787a3003955',
+  '001532001032001331001d370049692f88ad80bada89bfdb5f9fbb4690ab539dba75bbd687c5e06db1cd4c97b33c84a04b8eac6db0cb85cde686cbe7',
+  '76b5d8639ec44a7da8255882054167003a6100255400235200426f0053860c50861e568d4583ba6fabe66da7e94a86c7215a9b0d43831e599a3475b6',
+  '3c78ba235e9b06478715569d4581c65891d43b76b50644810135730a498816549618589d2969ae336fb12462a1024886024081235f9f4f90ce66b0ee',
+  '69b4f267afeb69afeb66aeef63aaed59a0e24f8dd04177bc3064a419589a2066a93877b93873b11f58940c4d8b175c994080ba6aa7de77b5ed70b0e6',
+  '6dace172b0e177b4e56eadd94a8eb705517e001a47000d3d0021540040710054832a6999497caf689ace79afe17ab3e47ab3e47cb4eb7eb7ef7db9ed',
+  '6daee24b8dc5296fa92d73ad4f98d16eb8f276c4f765b5e83588bf004b87002b62003f73006d9c4097c463addc67b3e766b5e96abbe878c1ea7cc2ec',
+  '76beeb74bee979c2e77bc4e97cc5ee7bc5ef78c4eb78c3ed79c2ed7bc5f078c4ef60b0db287bab0254870962943e8db8569ec83985b405598c02467b',
+  '055589176f9e2d75a3206796054d82125d90418cbc549ecf2c7db200538500437800508904689d1e76a8297aac247caf398dc14198c93f92c03385b6',
+  '2e7fb02977ac1b6ca114699c166c9e176b9d0e64960f61961b6ca11a6ca1166699146499236ea4377eb14588b94488ba3e81b73b7eb14485b64f90c2',
+  '5998cb5fa0d067a8d66daddc6eb2e372b6eb7abcf080c1f17bc0f071bbea72bde97cc4ec7ec7ee65b8de3992b90c688e055b7e0d6986137490046d8a',
+  '00607a006079117991399cb64cafc93e9ebb15738d035a7110697f267a984290b067adcd86c3e68cc3e77fb6dc689cc64a7aa23b6690426e983b6696',
+  '1b4673022e5504335d255583547fad7ba2cd84b1dc7db0e173abdd71a5d7689acd5184b42f679313557a24688c3b7ca04480a74381a74c8fb965a6d2',
+  '74b1db70acd561a2cb4c8db9296d980f59830c588010597f12567d13557b2b648a4c83aa6ca7ce7fbce685c1ed87c2ee96c9f2a3d1faadd7ffadd7ff',
+  'a8d1fe94bdea6d93c33f6599335c8c436c96678bb692b6e8add1ffa8ccfb9bbfec8db1e06789bb355688254776466794779ac997b9e697b5e07190ba',
+  '496a9a4767916d8db19abae6b5d8ffb6d9ffb2d2fcb0d3fcadd1fdaed4feb3d7ffbaddffc4e7ffc2e8ffb1d8fe8eb5de517ca315466c0e3c631b486d',
+  '1d4c7116466b1848693665886193b892c2e6acdaf99ecaeb6694b3244f701d456250759297bfe3cdf3ffdbfaffcee7ffb1c9e594a8bf8393a3939eb0',
+  'b7c1d2dbe5f6edf7ffe7edfadedfecd6d7e1d1d0dacfced6dbdae1ecebf1f6f5fbf8f8fdf7f6fdf2f3fbeff3fce7eff9d7dde9c9cfdcc4c9d8c9d0de',
+  'd1d8e5d5ddead4dfedd5e0edd6dfecd6deedd6e3f2dfeffbe4f4fee1f1fbd8eaf5d5ecf6d7eefbd2edfaceebf6c9e9f1c3e5edbddfe8a7cfd98abac4',
+  '7bb2b77fb2b57eafb47eafb471aaad639fa363a1a470aaad75aeb07ab0b475aeb466a1a6649da36ca1a868a1a4639c9f55888c44747c3d6f7545767b',
+  '5381875f8d92618c925f8b91648b91638a8f688e926b91926c8d90789a9d90acaf9ebbbdaac4c9b8d1d6cfe2e8deeef3e1f1f7e5f2f8eef3fcf2f5fd',
+  'f3f9fdf4fafef5fcfef8fcfff9fafef6f6fbf2f5f8eff4fdf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fb',
+  'f5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fb',
+  'f5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fb',
+  'f5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fb',
+  'f5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fb',
+  'f5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fb',
+  'f5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fb',
+  'f5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fb',
+  'f5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fb',
+  'f5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fbf5f7fb',
+  'f5f7fb',
+].join('');
+// combed web tone (linking): θ = -30..30° (1°) × radii 600..900, multiplied in, left ring
+const WM_L = [
+  'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+  'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+  'faf5f4fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffaf4e2fffffffffffffffffffffffffffffff0f5f7ffffff',
+  'fffffffffffffffffffffffffffffff1f2f1fffffffffffffffffff2faf6fffeeffffffffffffffffffffffffff9eff2fdf4f4ffffffffffffffffff',
+  'fffffffffffffffffffffffdfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffcfffffdffffffffffffffffffffffffffffff',
+  'fcf8f6fffffffffffffffffffffffffffffff1eee7fffffffffffffffffffffffffffffffdf6f8f2ebeefffffffffffffffffff6fafcf0f2ebffffff',
+  'fffffffffffffffffff4fdfff6efe8fffffffffffffffffffffffffffffff0e2e1fdfafdfffffffffffffffffffffffffef9fff7e4ecffffffffffff',
+  'fffffffffffffbe7d8fffcfffffffffffffffffffffffffffffffffff9cffffffffffffffffffffffffffffeffffc4a6ffffffffffffffffffffffff',
+  'ffffffffe7eafffffffffffffffffffefefffffffefff5f5fffffffffffffffffffffffffae5dbf5dddcfffffffffffffffffffffffffde1ddfff4e7',
+  'ffffffffffffffffffffffffffeef0fce7e0fffffffffffffffffffffffffee9e9fcd2cdfffffffffffffffffffffffffbdcd5ffdfd1ffffffffffff',
+  'fffffffffffff2d1c8ffede3ffffffffffffffffffffffffffdacdfff2e3fffffffffffffffffffffffffeeae0fbe4d6ffffffffffffffffffffffff',
+  'ffececfcccbeffffffffffffffffffffffffffedecfce3d5ffffffffffffffffffffffffe9dfb5ebe3c9fffffffffffffffffffffffff2ecd1e7ddce',
+  'ffffffffffffffffffffffe8fff6c8f5dfadfffffffffffffffffffffff2f7ddd0d3ae96ffffffffffffffffffffffb5e5da63efeec5ffffffffffff',
+  'fffffffffffffff8e2fff2ffffffffffffffffffffffffffe9e0a4eeecfffffffffffffffffffffdfffff1eee4fffffffffffffffffffffffff9fcbc',
+  'f0eeb4fffffffffffffffffffffffffffffff6e7dbe2e6f8ffffffffffffffffffd7cfb7f8fcfafffffffffffffffffffffffff9ffffeee5daedeafb',
+  'fffffffffffffffffffffff7fbfddefffff4fffffffffffffffffff6fad6f2e9b8f3eadbffffffffffffffffffffffffffffefd5ddc4ffffffffffff',
+  'fffffff3fadffffffff3dec7fffffffffffffffffffffffffbffffeab498fffffffffffffffffffdfffeffffffffebe6fffffffffffffffffffaffff',
+  'fafefefff4e8fffffffffffffffffffffffffbfdfffff0e3fffffffffffffffffffffffffefffefffffffffffffffffffffffffffffffffffffffbfa',
+  'fffffffffffffffffffffffffffffffffffefffffffffffffffffffffffffffffeffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+  'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+  'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+].join('');
+// same, right ring
+const WM_R = [
+  'ffffffffffffffffffffffffffffffd3d8dbffffffffffffffffffffffffffffffdde6ebffffffffffffffffffffffffffffffc7d2e4ffffffffffff',
+  'ffffffffffffffffff96b2bbffffffffffffffffffffffffffffffb0c0d8ffffffffffffffffffffffffffffffd8dcebffffffffffffffffffffffff',
+  'd4d6e2fffffffffffffffffffffffffffffffffffff5f5f5ffffffffffffffffffffffffe3e9e7ffffffffffffffffffffffffffffffffffffffffff',
+  'ffffffffffffffffffffffff98cdd8ffffffffffffffffffffffffded5eed4efeefffffffffffffffffffffffffffffee8ecf5ffffffffffffffffff',
+  'ffffffffffffe7ddf9fffffffffffffffffffffffffffffff6f9faffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+  'fcffffffffffffffffffffffffffffffffffa4c8ca86bbb7ffffffffffffffffffffffffd1eced94c2c2fffffffffffffffffffffffffffffffdffff',
+  'ffffffffffffffffffffffffe9f3f9ffffffffffffffffffffffffffffffecffffffffffffffffffffffffffffffffffc8e5f9ffffffffffffffffff',
+  'ffffffffffffe6fdffffffffffffffffffffffffffffffffd3ecf7ffffffffffffffffffffffffffffffe3f2fce8fff4ffffffffffffffffffe5f1ff',
+  'f6fcfffbfbf8ffffffffffffffffffadd9eafffffffffffffffffffffffffffffffffffffdfffffffff9ffffffffffffffffffffffffdbf5ecffffff',
+  'ffffffffffffffffffffffffb8e4e0d8f2e8ffffffffffffffffffffffffdbf7ede9ffe9ffffffffffffffffffffffffd5fbe9ffffffffffffffffff',
+  'ffffffffffffc3ebe2effcf8ffffffffffffffffffffffffc5f7ece0f9f6ffffffffffffffffffffffffc9f5ebd2f3ebffffffffffffffffffffffff',
+  'cef0efcef4edffffffffffffffffffffffffc7eee6d1f1efffffffffffffffffffffffffa8f4ebffffffffffffffffffffffffffffffc9f7f2ffffff',
+  'ffffffffffffffffffffffffc5f8f4ffffffffffffffffffffffffffeffcb7e3eaffffffffffffffffffffffffffffffc1f1f5ffffffffffffffffff',
+  'ffffffffffffd8edf5fffffffffffffffffffffffffefefbf6fffffef5f5ffffffffffffffffffffffffa3e0f67db1b8ffffffffffffffffffffffff',
+  'c6edebbfd7d6ffffffffffffffffffe7ebf1fffffffffffffffffffffffffffffffffffff4f8ff69d6c1fffffffffffffffffffffffefff6ff85dfc7',
+  'ffffffffffffffffffffffffd9e4e8bcffecffffffffffffffffffe4eae1f1f0f9ffffffffffffffffffffffffffffffd8e3ecffffffffffffffffff',
+  'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+  'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+  'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+  'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+  'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+].join('');
+// handoff card haze 24×11 (multiplied in)
+const CARD_HAZE = [
+  'e0bac4fff9fff0e0e7f2ebede6ebf5ece6d6fcfbfff4fcfff0f6fffffffffffffffffefff0eaf4b4b2c7ebecfbffffffffffffffffffffffffffffff',
+  'fffffff3f5fbf4f2fceef3f8debec3d3becab2919bb59597dacde6cfe1e8d2e4f0ccc6e0d3c8cbd8d8ccfffeffcba2ada68fa4a49eb88a89a2e2d8e0',
+  'fffffffffffffffffffffffffffeffd9d9e1e5e3e4edf3f6c5a29dffffffffffffebeceef7ffffd3c5d2d8e1e3b8cdcba2bbd1ada5caa3abc5a393af',
+  'e0c2d4e9cdd6d5bdcd896c81ffffffffffffffffffffffffffffffd5e4f1cbcacee7eaf0e1bfbaf1f5fae1e1e4e2e2e7d2dee2cfbeb5cfccc793a1b8',
+  'aac1c69a8cb0ffedff887687a27376c5a2afc5a0b0a690a8fffffffffffffffffffff2ffffeaffd6e1efd2d5e1e7e8f4c8b0adf0fafbe8e6e9f5ffff',
+  'eee4dedfcacbf4ebe0b6ccc7a4b9bfa8989eb7bad58a797ab290a4a08189ddbfc0b1a5a6f0dbf2fffffffffffffeffffdfebf8edf4f5ded7ece7ebf6',
+  'e9dbe0f6f7f6d5d5d5ffffffd4d6e9f5e2def7e4ea9aa7bcaab3c2afb2c5adb7c8c6adc6dfbed2d4b1c0ccb6c7a1a0bafffffffffff6d0f5e7ffffff',
+  'ebffffcaecf3e7dce4eef2f9ddd4dcffffffe5e5e9fffffff3cfcaf9e0ddd7d8f090a4aeb5b9c2a9a3b1d5c6d3cebed3cca7aae1b6c0cfbac1ccc1cc',
+  'ffffffffffffffffffffffffffffffecf7fffff9faebeff6f5eff7f2f5f3ceced2ffffffe3c6b6cbd8d6b6c5ddaccdcfe3f6ffcdb5cbcdaac0d9c8dc',
+  'c0b4ccc3b0c4c2bac5958294fffffffffffffffffffefffffffffffffffffffcffe7ebf1e8e0e9fbfcfcffffffffffffdec4bcd6eaeeabb3c0828a96',
+  'f2ffffaaa6b0dfdae5d6c8d7e3bdcee3bccee8cad9d5c8d2e4d6dfffffffffffffffffffffffffecffffeff1feffffffede5edfdfcfeffffffffffff',
+  'ffd8d0dde7e4b8b8cb666872ffffffb5b2b1cecfd2dcd5e6ffdfecffdaeaffe2ecffe8eae8dfeae7d5e0ffffffffffffffffffd3ffffa8c3d9f6fbff',
+  'ebe0ddfdfafcfffffffffffffffffbfff3f3ddd8d8cbbdbba1818dd4cacdf5f3f4f1edf1e5dddfe7e3e3eae4e5e5e1e1e8dfe3e2e0e3ffffffffffff',
+  'dcf6fefeffffe8ffffcbf3f5',
+].join('');
+// disasm heat grid 11×5, loading
+const HEAT_A = [
+  'f3397238150ef9f9f5d12a05fceff0c8320aefb37edbd9c8120b08f43a69eb9d6efcf6fbfcf5fafbf4fbf9eefabf290cf9e7f3fceff93f2e0afbf7f7',
+  'eee3e1160d06fcf1f94d3306614509f3537cf4abd1bc2d0ce16816d05407f5b8cefcf6f6fbf7f3f83676f95386150704130507290f0ef8e3e1dc6619',
+  'e99346e15a1bcc894f24150cec974dfaedeec92a10faf2eaf6e8e6180803f444812f0d11f291b4dba05bf3dfdc',
+].join('');
+// disasm heat grid 11×5, linking
+const HEAT_B = [
+  'dc4e80ede7c8fdc2f4ebdab7943f09fde6dffcece38a983d7a7a48f86bbae0e0d6fcbcd9fdecfaaf2607f987c9f7dabcee58a9f5dbfaece4dafbe6ec',
+  '282f08201d0af9edf8afa898f2d795f4479fd72480efb872d7af9dc27b59e9277df9e3f0f2e0eace4d81f12f8dede1be474914ebe9c82a1d01bfa596',
+  'cab19cf6ecddfde9eaebe2b3ae281993502ffbd0aff47256211601efe3b7ee4b9a5a563ffad3e0bfb39dab2e19',
+].join('');
+
+// ---------------------------------------------------------------- helpers
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const smooth = (a, b, x) => {
+  const t = clamp((x - a) / (b - a), 0, 1);
+  return t * t * (3 - 2 * t);
+};
+const mix = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+const rgb = (c, a = 1) => (a >= 1
+  ? `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`
+  : `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a.toFixed(3)})`);
+const hexC = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+const hexAt = (s, i) => [parseInt(s.substr(i, 2), 16), parseInt(s.substr(i + 2, 2), 16), parseInt(s.substr(i + 4, 2), 16)];
+
+function makeCanvas(w, h) {
+  if (typeof OffscreenCanvas === 'function') return new OffscreenCanvas(w, h);
+  if (typeof document !== 'undefined' && document && typeof document.createElement === 'function') {
+    const c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    return c;
+  }
+  return null;
+}
+
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const fmt = n => {
+  const v = Math.max(0, Math.round(n));
+  return v >= 1000 ? `${Math.floor(v / 1000)} ${String(v % 1000).padStart(3, '0')}` : String(v);
+};
+
+// Body colour so that body + multiplied core averages to the measured mean over one needle pitch.
+const bodyOf = m => m.map(v => {
+  const x = v / 255;
+  const b = (-(1 - CORE_K) + Math.sqrt((1 - CORE_K) ** 2 + 4 * CORE_K * x)) / (2 * CORE_K);
+  return Math.min(255, b * 255);
+});
+
+function decodeNeedles(s) {
+  const n = 2 * KMAX + 1;
+  const len = new Float32Array(n);
+  const body = [[], [], []];
+  for (let i = 0; i < n; i++) {
+    const o = i * 20;
+    len[i] = parseInt(s.substr(o, 2), 16) * 2;
+    for (let k = 0; k < 3; k++) body[k].push(bodyOf(hexAt(s, o + 2 + k * 6)));
+  }
+  return { len, body };
+}
+const gain = c => c.map(v => 255 - (255 - v) * WASH_GAIN);
+function decodeWebA(s) {
+  const rows = [];
+  for (let j = 0; j < 45; j++) {
+    const row = [];
+    for (let k = 0; k < 7; k++) row.push(gain(hexAt(s, (j * 7 + k) * 6)));
+    rows.push(row);
+  }
+  return rows;
+}
+const decodeProfile = s => Array.from({ length: s.length / 6 }, (_, i) => hexAt(s, i * 6));
+const decodeMod = s => Array.from({ length: s.length / 36 }, (_, j) => Array.from({ length: 6 }, (_, k) => hexAt(s, (j * 6 + k) * 6)));
+const TAB = {
+  L: { A: decodeNeedles(NL_A_L), B: decodeNeedles(NL_B_L), webA: decodeWebA(WEB_A_L), webB: decodeProfile(WP_L), mod: decodeMod(WM_L) },
+  R: { A: decodeNeedles(NL_A_R), B: decodeNeedles(NL_B_R), webA: decodeWebA(WEB_A_R), webB: decodeProfile(WP_R), mod: decodeMod(WM_R) },
+};
+const profileAt = (prof, deg) => prof[clamp(Math.round((deg - WP_T0) / WP_STEP), 0, prof.length - 1)];
+const HEAT = {
+  A: Array.from({ length: 55 }, (_, i) => hexAt(HEAT_A, i * 6)),
+  B: Array.from({ length: 55 }, (_, i) => hexAt(HEAT_B, i * 6)),
+};
+
+function txt(ctx, str, x, y, size, weight, color, align = 'left', baseline = 'alphabetic') {
+  ctx.font = `${weight} ${size}px ${MONO}`;
+  ctx.textAlign = align;
+  ctx.textBaseline = baseline;
+  ctx.fillStyle = color;
+  ctx.fillText(str, x, y);
+}
+
+function glowText(ctx, str, x, y, size, weight, color, glow, blur, align = 'left') {
+  ctx.save();
+  ctx.shadowColor = glow;
+  ctx.shadowBlur = blur;
+  txt(ctx, str, x, y, size, weight, color, align);
+  ctx.shadowBlur = 0;
+  ctx.restore();
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h);
+  ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.lineTo(x, y + r);
+  ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+}
+
+const ringXY = (ring, th, r) => {
+  const a = ring.ang0 + th;
+  return [ring.cx + Math.cos(a) * r, ring.cy + Math.sin(a) * r];
+};
+
+// Keyframe-locked oscillator: period 2 s, so it is exactly zero at t = 0, 14 and 24.
+const lock = (t, phase, k = 1) => Math.sin(Math.PI * k * t + phase) - Math.sin(phase);
+
+// ---------------------------------------------------------------- precomputed geometry
+function gauss(rnd) {
+  return (rnd() + rnd() + rnd() + rnd() - 2) / 0.8165;
+}
+
+// Combed target of a strand: the segment of the fibre line at angle ψ (about the convergence point E from the
+// ring centre) between ring radii rIn and rOut, returned in ring-polar form [θa, ra, θb, rb].
+function combTarget(E, psi, rIn, rOut) {
+  const ux = Math.cos(psi), uy = Math.sin(psi);
+  const at = r => {
+    // solve |(E + t·ux, t·uy)| = r for t > 0
+    const b = E * ux;
+    const t = -b + Math.sqrt(b * b - (E * E - r * r));
+    const x = E + t * ux, y = t * uy;
+    return [Math.atan2(y, x), Math.hypot(x, y)];
+  };
+  return [...at(rIn), ...at(rOut)];
+}
+
+function buildStrands(seed, E) {
+  const rnd = mulberry32(seed);
+  const classes = [
+    { n: 300, w: 0.62, a: 0.5, tone: 0 },
+    { n: 170, w: 0.95, a: 0.32, tone: 1 },
+    { n: 110, w: 1.7, a: 0.22, tone: 2 },
+  ];
+  const out = [];
+  for (const c of classes) {
+    for (let i = 0; i < c.n; i++) {
+      const pick = () => {
+        const th = clamp(-3 + gauss(rnd) * 13, -34, 30) * DEG;
+        const r = 430 + Math.pow(rnd(), 0.8) * 470;
+        return [th, r];
+      };
+      const [t1, r1] = pick();
+      let [t2, r2] = pick();
+      if (rnd() < 0.45) { t2 = t1 + (rnd() - 0.5) * 16 * DEG; r2 = clamp(r1 + (rnd() - 0.5) * 300, 420, 905); }
+      const thc = (t1 + t2) / 2 + (rnd() - 0.5) * 2 * DEG;
+      const rIn = 520 + rnd() * 330;
+      const rOut = 868 + rnd() * 36;
+      const [ca, cra, cb, crb] = combTarget(E, thc * 1.1, rIn, rOut);
+      out.push({
+        cls: c.tone, w: c.w * (0.8 + rnd() * 0.5), a: c.a,
+        t1, r1, t2, r2, thc, ca, cra, cb, crb,
+        bend: (rnd() - 0.5) * 0.9,
+        bin: clamp(Math.floor((thc / DEG + 44) / 4), 0, 21),
+      });
+    }
+  }
+  return out;
+}
+
+function buildSphere(n) {
+  const pts = [];
+  const golden = Math.PI * (3 - Math.sqrt(5));
+  for (let i = 0; i < n; i++) {
+    const y = 1 - ((i + 0.5) / n) * 2;
+    const rr = Math.sqrt(1 - y * y);
+    pts.push({ y, rr, a: i * golden, k: i % 9 });
+  }
+  return pts;
+}
+
+// World-space agent chains (pink-ringed disassembler agents / teal-ringed decompiler agents).
+const CHAIN_L = [[-652.5, -180.5], [-615, -189.2], [-575, -176.7], [-537.5, -190.5], [-500, -190.5], [-465, -196.7], [-430, -211.7], [-397.5, -229.2], [-366.3, -253]];
+const CHAIN_R = [[647.5, 185.8], [611.3, 184.5], [573.8, 182], [536.3, 185.8], [501.3, 185.8], [466.3, 192], [428.8, 212], [396.3, 225.8], [363.8, 250.8]];
+// Soft agent blobs: [x, y, radius, colour, alpha] for the loading (A) and linking (B) keyframes.
+const BLOBS = {
+  L: {
+    A: [[-575, -487, 9, '#6f6447', 0.85], [-436, -52, 13, '#7a3f2c', 0.55], [-350, -55, 11, '#9c3f33', 0.5], [-425, -160, 12, '#7c3b1d', 0.5],
+      [-376, 331, 12, '#9c7d6e', 0.5], [-594, 286, 11, '#7d5244', 0.5], [-451, 278, 12, '#9c5232', 0.5], [-432, 87, 11, '#984b3a', 0.45],
+      [-262, -347, 9, '#e3b6c0', 0.6], [-305, 410, 10, '#c88e9a', 0.45]],
+    B: [[-290.2, -74.4, 12, '#3c1800', 0.95], [-302.4, 179.3, 12.6, '#4b2202', 0.95],
+      [-387.5, -188.7, 12.5, '#693514', 0.95], [-311.3, 330.9, 7.1, '#7a521b', 0.87],
+      [-393.2, -160.3, 12.4, '#823824', 0.85], [-398.8, -234.9, 10.2, '#a67e68', 0.63],
+      [-430.4, -205.7, 7.6, '#ba8893', 0.62], [-367.2, -257.6, 7.9, '#ca97a8', 0.62],
+      [-327.5, 377.9, 6, '#ac7a60', 0.58], [-321, 360.1, 7.1, '#c5a599', 0.54], [-270.8, 31.8, 9.9, '#ca988a', 0.51],
+      [-298.3, 224.7, 7.2, '#5a340e', 0.50], [-278.9, 51.3, 14, '#c4897b', 0.49], [-291, 124.2, 12, '#935e2f', 0.48],
+      [-278.9, 157.4, 12.9, '#a3643a', 0.47], [-333.2, 197.2, 10, '#754d20', 0.47]],
+  },
+  R: {
+    A: [[627.5, 338.3, 12, '#3a6d63', 0.8], [541.3, 345.8, 11, '#4f786f', 0.7], [593.8, 345.8, 11, '#4c7c72', 0.7], [440, 117, 11, '#173f60', 0.75],
+      [526.3, -366.6, 11, '#53628f', 0.65], [563.8, -426.6, 10, '#5f7b95', 0.6], [365, 255.8, 10, '#47709a', 0.55], [312.5, 72, 10, '#22737e', 0.6],
+      [368.8, 23.2, 10, '#196b80', 0.55], [417.5, 75.8, 10, '#123668', 0.6], [301.3, -272.9, 9, '#7c8fd0', 0.55], [346.3, 229.5, 10, '#9890d6', 0.55]],
+    B: [[357.5, 92.6, 13.6, '#083029', 0.95], [325.9, 193.1, 14.4, '#313b7d', 0.95],
+      [364.8, 26.1, 12.1, '#0a3a62', 0.95], [410.2, 18.8, 10, '#045555', 0.87],
+      [365.6, -151.4, 9.7, '#3d437c', 0.82], [419.9, 259.6, 9.5, '#446180', 0.81],
+      [387.5, 347.1, 11, '#395766', 0.80], [377.8, 210.1, 9.6, '#725cad', 0.79], [428, -127.1, 9.7, '#3d2d6a', 0.79],
+      [415, -337, 7.3, '#34656c', 0.73], [371.3, -260, 8.6, '#2f5b80', 0.72], [404.5, 235.3, 11.1, '#2c6e86', 0.71],
+      [293.5, -265.7, 7.2, '#2e706e', 0.68], [432.9, 213.4, 6.5, '#7c69b2', 0.63],
+      [372.9, 255.5, 10.5, '#396b8e', 0.60], [285.3, -223.5, 6.5, '#1e5c7e', 0.56],
+      [364, 336.6, 6.6, '#919dba', 0.52], [287.8, -121.4, 6.5, '#1f616c', 0.51],
+      [297.5, -232.5, 14.1, '#2a6997', 0.49], [294.3, -4.7, 10.4, '#4e96a3', 0.48],
+      [295.1, -194.4, 9.7, '#1c5f90', 0.48], [310.5, -230, 14.5, '#2c7199', 0.47]],
+  },
+};
+// Handoff comets: [lane y, speed (world/s, sign = direction), head x at t = 14, size, core colour].
+// The first five are the heads visible in the linking keyframe; the rest are between passes at t = 14.
+const COMETS = [
+  [-123, 92, -70.5, 1.15, [143, 28, 85]],
+  [-16, 70, 45.4, 1.1, [138, 49, 117]],
+  [23.7, 78, -22.7, 1.0, [163, 60, 98]],
+  [94.2, 84, 38.1, 1.15, [176, 82, 150]],
+  [416, 76, -83.5, 0.9, [162, 55, 91]],
+  [-330, -58, 260, 0.9, [219, 39, 119]],
+  [250, -66, 260, 0.9, [219, 39, 119]],
+  [-242, 64, -260, 0.95, [143, 28, 85]],
+  [-470, 80, -260, 0.8, [138, 49, 117]],
 ];
 
+// ---------------------------------------------------------------- scene
 export class ReaDecompilerScene {
   constructor() {
     this.duration = 24;
+    this.strands = { L: buildStrands(101, FIBRE_E.L), R: buildStrands(203, FIBRE_E.R) };
+    this.sphere = buildSphere(118);
+    this.segBuf = new Float64Array(4 * (2 * KMAX + 1));
+    this.gradBuf = new Array(2 * KMAX + 1);
+    this.cache = new Map();
   }
 
-  font(ctx, size = 11, weight = 400) {
-    ctx.font = `${weight} ${size}px ${MONO}`;
-  }
-
-  text(ctx, str, x, y, color = '#18181b', size = 11, weight = 400, align = 'left') {
-    this.font(ctx, size, weight);
-    ctx.fillStyle = color;
-    ctx.textAlign = align;
-    ctx.fillText(String(str), x, y);
-    ctx.textAlign = 'left';
+  timeline(t, reduced) {
+    const zIn = t <= T_START ? 0 : 1 - Math.exp(-(t - T_START) / 3.743);
+    const back = smooth(19.6, 23.8, t);
+    const zoom = 0.8 + 0.45 * zIn * (1 - back);
+    const s = smooth(T_START, 10.5, t) * (1 - back);
+    const comb = smooth(2.2, 9.6, t) * (1 - smooth(19.8, 23.8, t));
+    const p = t <= T_START ? 0 : 1 - Math.exp(-(t - T_START) / 8.153);
+    const q = p / 0.7815;
+    const live = smooth(2.4, 4.8, t) * (1 - smooth(21.2, 23.4, t));
+    const card = smooth(12.2, 15.0, t) * (1 - smooth(18.4, 19.8, t));
+    const state = t < T_START ? 'loading' : t < 19.6 ? 'linking' : 'verified';
+    const motion = reduced ? 0 : 1;
+    const gap = 0.42 - 0.21 * Math.min(q, 1.12);
+    return {
+      t, zoom, s, comb, p, q, live, card, state, motion, gap,
+      gapCenter: 0.42 - 0.2 * Math.min(q, 1.12),
+      camLabel: (Math.round(zoom * 20) / 20).toFixed(2),
+      labelL: 0.9 - (9.95 * 4 / 24) * t,
+      labelR: 0.96 - (9.95 * 4 / 24) * t,
+      bars: {
+        L1: 23.7 * Math.sin(TAU * t / 12), L2: 25.5 * Math.sin(TAU * t / 8),
+        R1: 14.43 * Math.sin(TAU * t / 12), R2: 5.2 * Math.sin(TAU * t / 6),
+      },
+    };
   }
 
   render(ctx, state) {
-    const t = Number(state.elapsed) || 0;
-    const progress = clamp(t / this.duration, 0, 1);
-    const lifted = Math.floor(progress * 1840);
-    const decompiled = Math.floor(progress * 1390);
-    const flagged = Math.floor(progress * 395);
-    const syncPct = Math.round(clamp(progress * 74, 0, 74));
-    const phaseGap = (0.48 - progress * 0.31 + Math.sin(t * 1.7) * 0.02).toFixed(2);
-    const phaseName = progress < 0.18 ? 'loading' : progress < 0.72 ? 'linking' : 'verified';
-
-    // Warm paper background
-    ctx.fillStyle = '#f7f6f2';
-    ctx.fillRect(0, 0, WIDTH, HEIGHT);
-
-    // Top telemetry bar
-    ctx.fillStyle = '#efeee8';
-    ctx.fillRect(0, 0, WIDTH, 36);
-    ctx.strokeStyle = '#dcdad2';
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(0, 36.5); ctx.lineTo(WIDTH, 36.5); ctx.stroke();
-
-    this.text(ctx, 'REA', 16, 23, '#18181b', 13, 700);
-    const topMetrics = [
-      ['RUN', 'rea-lab-01', '#27272a', 155],
-      ['LIFTED', lifted.toLocaleString(), '#c2410c', 260],
-      ['DECOMPILED', decompiled.toLocaleString(), '#0f766e', 340],
-      ['FLAGGED', flagged.toLocaleString(), '#db2777', 425],
-      ['SYNC', `${syncPct}%`, '#18181b', 495],
-      ['CAM', `×${(0.8 + progress * 0.55).toFixed(2)}`, '#0284c7', 555],
-      ['STATE', phaseName, '#18181b', 620],
-      ['SIM', 'illustrative', '#71717a', 705],
-    ];
-    for (const [k, v, col, x] of topMetrics) {
-      this.text(ctx, k, x, 13, '#8e8d87', 8.5, 600);
-      this.text(ctx, v, x, 27, col, 11.5, 700);
+    const t = clamp(Number(state && state.elapsed) || 0, 0, this.duration);
+    const st = this.timeline(t, !!(state && state.reducedMotion));
+    if (!this.warmed) {
+      // rasterise both wash states up front so scrubbing never hitches mid-timeline
+      this.warmed = true;
+      this.washLayers('L');
+      this.washLayers('R');
     }
-    this.text(ctx, 'REA · reverse engineering', WIDTH - 16, 23, '#27272a', 12, 700, 'right');
-
-    // Upper Dual-Arc Arena
     ctx.save();
-    ctx.beginPath();
-    ctx.rect(0, 37, WIDTH, 830);
-    ctx.clip();
-
-    const leftCx = -215, leftCy = 445, arcR = 525;
-    const rightCx = WIDTH + 215, rightCy = 445;
-
-    // 1. Left & Right Dense Neural Webs inside the rings
-    for (let i = 0; i < 360; i++) {
-      const a1 = (rand(i * 3 + 1) - 0.5) * 1.35;
-      const a2 = (rand(i * 7 + 2) - 0.5) * 1.35;
-      const r1 = 120 + rand(i * 11 + 3) * (arcR - 135);
-      const r2 = 220 + rand(i * 13 + 5) * (arcR - 230);
-      const sway = state.reducedMotion ? 0 : Math.sin(t * 0.9 + i) * 6;
-
-      // Left warm web
-      ctx.beginPath();
-      ctx.moveTo(leftCx + Math.cos(a1) * r1, leftCy + Math.sin(a1) * r1);
-      ctx.quadraticCurveTo(
-        leftCx + Math.cos((a1 + a2) * 0.5) * 340 + sway,
-        leftCy + Math.sin((a1 + a2) * 0.5) * 340 - sway,
-        leftCx + Math.cos(a2) * r2,
-        leftCy + Math.sin(a2) * r2
-      );
-      ctx.strokeStyle = i % 4 === 0 ? 'rgba(217, 72, 24, 0.24)' : 'rgba(138, 52, 24, 0.16)';
-      ctx.lineWidth = 0.7;
-      ctx.stroke();
-
-      // Right cool web
-      const b1 = Math.PI + a1;
-      const b2 = Math.PI + a2;
-      ctx.beginPath();
-      ctx.moveTo(rightCx + Math.cos(b1) * r1, rightCy + Math.sin(b1) * r1);
-      ctx.quadraticCurveTo(
-        rightCx + Math.cos((b1 + b2) * 0.5) * 340 - sway,
-        rightCy + Math.sin((b1 + b2) * 0.5) * 340 + sway,
-        rightCx + Math.cos(b2) * r2,
-        rightCy + Math.sin(b2) * r2
-      );
-      ctx.strokeStyle = i % 4 === 0 ? 'rgba(14, 165, 233, 0.25)' : 'rgba(15, 76, 129, 0.16)';
-      ctx.lineWidth = 0.7;
-      ctx.stroke();
-    }
-
-    // 2. Radial histogram spikes & track labels along Left and Right Arcs
-    const spikeCount = 210;
-    for (let i = 0; i < spikeCount; i++) {
-      const u = (i / (spikeCount - 1) - 0.5) * 1.36;
-      const waveL = Math.sin(u * 7 + t * 2.2) * 0.35 + Math.cos(u * 13 - t * 1.4) * 0.25;
-      const centerBoostL = Math.exp(-((u - 0.08) ** 2) / 0.045) * (0.55 + 0.35 * Math.sin(t * 1.5));
-      const lenL = clamp((0.18 + rand(i + 19) * 0.35 + Math.max(0, waveL) * 0.4 + centerBoostL) * (0.45 + progress * 0.65), 0.06, 1.15) * 165;
-
-      const x0L = leftCx + Math.cos(u) * (arcR + 48);
-      const y0L = leftCy + Math.sin(u) * (arcR + 48);
-      const x1L = leftCx + Math.cos(u) * (arcR + 48 + lenL);
-      const y1L = leftCy + Math.sin(u) * (arcR + 48 + lenL);
-
-      ctx.strokeStyle = lenL > 110 ? '#d95f18' : lenL > 65 ? '#853512' : '#291a12';
-      ctx.lineWidth = 1.85;
-      ctx.beginPath(); ctx.moveTo(x0L, y0L); ctx.lineTo(x1L, y1L); ctx.stroke();
-
-      // Right spike (pointing left toward center)
-      const ur = Math.PI - u;
-      const waveR = Math.sin(u * 6 - t * 2.0) * 0.35 + Math.cos(u * 11 + t * 1.6) * 0.25;
-      const centerBoostR = Math.exp(-((u + 0.06) ** 2) / 0.05) * (0.5 + 0.35 * Math.cos(t * 1.3));
-      const lenR = clamp((0.16 + rand(i + 91) * 0.34 + Math.max(0, waveR) * 0.38 + centerBoostR) * (0.45 + progress * 0.65), 0.06, 1.1) * 160;
-
-      const x0R = rightCx + Math.cos(ur) * (arcR + 48);
-      const y0R = rightCy + Math.sin(ur) * (arcR + 48);
-      const x1R = rightCx + Math.cos(ur) * (arcR + 48 + lenR);
-      const y1R = rightCy + Math.sin(ur) * (arcR + 48 + lenR);
-
-      ctx.strokeStyle = lenR > 105 ? '#06b6d4' : lenR > 60 ? '#1d4ed8' : '#0f2942';
-      ctx.lineWidth = 1.85;
-      ctx.beginPath(); ctx.moveTo(x0R, y0R); ctx.lineTo(x1R, y1R); ctx.stroke();
-    }
-
-    // 3. Double ring tracks + rotated labels
-    for (const [cx, cy, isRight] of [[leftCx, leftCy, false], [rightCx, rightCy, true]]) {
-      for (const dr of [0, 48]) {
-        ctx.beginPath();
-        ctx.arc(cx, cy, arcR + dr, isRight ? Math.PI - 0.72 : -0.72, isRight ? Math.PI + 0.72 : 0.72);
-        ctx.strokeStyle = '#78756e';
-        ctx.lineWidth = dr === 0 ? 1.1 : 1.4;
-        ctx.stroke();
-      }
-      // Track labels inside the 48px band
-      const labels = isRight ? RIGHT_LABELS : LEFT_LABELS;
-      for (let k = 0; k < 44; k++) {
-        const u = ((k / 43) - 0.5) * 1.34 + (state.reducedMotion ? 0 : (t * 0.018 * (isRight ? -1 : 1)) % 0.03);
-        const angle = isRight ? Math.PI - u : u;
-        const tx = cx + Math.cos(angle) * (arcR + 24);
-        const ty = cy + Math.sin(angle) * (arcR + 24);
-        ctx.save();
-        ctx.translate(tx, ty);
-        ctx.rotate(isRight ? angle - Math.PI : angle);
-        const lbl = labels[k % labels.length];
-        const bold = lbl.startsWith('I ');
-        this.text(ctx, lbl, 0, 3, bold ? '#18181b' : '#57534e', bold ? 9.5 : 8.5, bold ? 700 : 400, 'center');
-        ctx.restore();
-      }
-    }
-
-    // 4. Orbiting Agent Pearls on Left and Right Webs
-    for (let i = 0; i < 12; i++) {
-      const aL = -0.35 + i * 0.045 + Math.sin(t * 0.8 + i) * 0.02;
-      const rL = 160 + i * 28;
-      const pxL = leftCx + Math.cos(aL) * rL;
-      const pyL = leftCy + Math.sin(aL) * rL;
-      ctx.fillStyle = 'rgba(225, 29, 72, 0.25)';
-      ctx.beginPath(); ctx.arc(pxL, pyL, 9, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#fff';
-      ctx.strokeStyle = '#be123c';
-      ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(pxL, pyL, 4.2, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-
-      const aR = Math.PI - 0.32 + i * 0.042 + Math.cos(t * 0.8 + i) * 0.02;
-      const rR = 165 + i * 27;
-      const pxR = rightCx + Math.cos(aR) * rR;
-      const pyR = rightCy + Math.sin(aR) * rR;
-      ctx.fillStyle = 'rgba(14, 165, 233, 0.25)';
-      ctx.beginPath(); ctx.arc(pxR, pyR, 9, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#fff';
-      ctx.strokeStyle = '#0369a1';
-      ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(pxR, pyR, 4.2, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-    }
-
-    // 5. Cross-Gap Handoff Particles & Center Diamond
-    ctx.setLineDash([3, 5]);
-    ctx.strokeStyle = '#a8a29e';
-    ctx.beginPath(); ctx.moveTo(WIDTH / 2, 55); ctx.lineTo(WIDTH / 2, 740); ctx.stroke();
-    ctx.setLineDash([]);
-
-    for (let p = 0; p < 18; p++) {
-      const cycle = fract(t * 0.42 + p * 0.13);
-      const y = 95 + ((p * 37) % 580) + Math.sin(cycle * Math.PI * 2 + p) * 14;
-      const x = 355 + cycle * 370;
-      const isBounce = p % 5 === 0;
-      const col = isBounce ? '#db2777' : '#7c3aed';
-      const grad = ctx.createLinearGradient(x - 28, y, x, y);
-      grad.addColorStop(0, 'rgba(219, 39, 119, 0)');
-      grad.addColorStop(1, col);
-      ctx.strokeStyle = grad;
-      ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(x - 26, y); ctx.lineTo(x, y); ctx.stroke();
-      ctx.fillStyle = col;
-      ctx.beginPath(); ctx.arc(x, y, 3.2, 0, Math.PI * 2); ctx.fill();
-    }
-
-    // Center HANDOFF Diamond
-    const cx = WIDTH / 2, cy = 365;
-    this.text(ctx, 'HANDOFF', cx, cy - 26, '#18181b', 10.5, 700, 'center');
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.rotate(state.reducedMotion ? Math.PI / 4 : Math.PI / 4 + Math.sin(t * 1.8) * 0.22);
-    ctx.fillStyle = '#fef3c7';
-    ctx.strokeStyle = '#18181b';
-    ctx.lineWidth = 2.2;
-    ctx.fillRect(-13, -13, 26, 26);
-    ctx.strokeRect(-13, -13, 26, 26);
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = BG;
+    ctx.fillRect(0, 0, W, H);
+    this.drawStage(ctx, st);
+    this.drawHud(ctx, st);
+    this.drawTerminal(ctx, st);
     ctx.restore();
-    this.text(ctx, `Δφ ${phaseGap}`, cx, cy + 34, '#18181b', 10.5, 700, 'center');
-
-    // Floating DISASM / DECOMP Badges
-    ctx.fillStyle = 'rgba(255,255,255,0.92)';
-    ctx.strokeStyle = '#d6d3cd';
-    ctx.lineWidth = 1;
-    ctx.fillRect(16, 152, 148, 54);
-    ctx.strokeRect(16, 152, 148, 54);
-    this.text(ctx, 'DISASM', 28, 176, '#18181b', 19, 700);
-    this.text(ctx, '64 agents · lifting', 28, 195, '#57534e', 10);
-
-    ctx.fillRect(WIDTH - 178, 560, 162, 54);
-    ctx.strokeRect(WIDTH - 178, 560, 162, 54);
-    this.text(ctx, 'DECOMP', WIDTH - 164, 584, '#18181b', 19, 700);
-    this.text(ctx, '16 agents · decompiling', WIDTH - 164, 603, '#57534e', 10);
-
-    // Translucent Handoff Ledger Overlay Card (appears as linking progresses)
-    if (progress > 0.12) {
-      const cardX = 225, cardY = 445, cardW = 630, cardH = 265;
-      ctx.fillStyle = 'rgba(247, 246, 242, 0.84)';
-      ctx.fillRect(cardX, cardY, cardW, cardH);
-      ctx.strokeStyle = '#c7c4bc';
-      ctx.strokeRect(cardX + 0.5, cardY + 0.5, cardW - 1, cardH - 1);
-      this.text(ctx, 'handoff  ·  disasm → decomp', cardX + 16, cardY + 24, '#18181b', 13, 700);
-      this.text(ctx, 'functions cross the gap · verify on arrival', cardX + 16, cardY + 40, '#78716c', 10);
-
-      HANDOFF_ROWS.forEach(([fnId, route, status, baseP], idx) => {
-        const ry = cardY + 64 + idx * 21.5;
-        const p = clamp(baseP * (0.5 + progress * 0.6), 0.15, 1);
-        this.text(ctx, fnId, cardX + 16, ry, '#18181b', 10.5, 700);
-        this.text(ctx, route, cardX + 95, ry, '#57534e', 10);
-        const stCol = status === 'PASS' ? '#0f766e' : status === 'REDO' ? '#db2777' : '#b45309';
-        this.text(ctx, status, cardX + 225, ry, stCol, 10, 700);
-        ctx.fillStyle = '#e5e4de';
-        ctx.fillRect(cardX + 295, ry - 7, 310, 5);
-        ctx.fillStyle = stCol;
-        ctx.fillRect(cardX + 295, ry - 7, 310 * p, 5);
-      });
-    }
-
-    // Bottom Hero Title inside Upper Stage
-    ctx.fillStyle = 'rgba(247, 246, 242, 0.92)';
-    ctx.fillRect(52, 745, 650, 66);
-    ctx.fillStyle = '#18181b';
-    ctx.fillRect(58, 752, 4, 50);
-    ctx.fillStyle = '#d97706';
-    ctx.fillRect(62, 752, 2, 50);
-    this.text(ctx, 'REA. BYTES IN. SOURCE OUT.', 76, 779, '#18181b', 31, 700);
-    this.text(ctx, 'disassembler on the left  ·  decompiler on the right', 76, 801, '#57534e', 13);
-    ctx.restore();
-
-    // Bottom 6-Panel Terminal Console
-    this.drawBottomConsole(ctx, t, progress, lifted, decompiled, flagged, syncPct, phaseGap, phaseName);
   }
 
-  drawBottomConsole(ctx, t, progress, lifted, decompiled, flagged, syncPct, phaseGap, phaseName) {
-    const topY = 868;
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, topY, WIDTH, HEIGHT - topY);
-    ctx.strokeStyle = '#d6d3cd';
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(0, topY + 0.5); ctx.lineTo(WIDTH, topY + 0.5); ctx.stroke();
+  // ============================================================ stage (world space)
+  drawStage(ctx, st) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, STAGE_TOP, W, STAGE_BOTTOM - STAGE_TOP);
+    ctx.clip();
+    ctx.translate(PIVOT_X, PIVOT_Y);
+    ctx.scale(st.zoom, st.zoom);
+    ctx.translate(0, -CAM_Y);
+    ctx.lineCap = 'butt';
+    ctx.lineJoin = 'round';
+    for (const side of ['L', 'R']) this.drawWash(ctx, side, st);
+    for (const side of ['L', 'R']) this.drawStrands(ctx, side, st);
+    for (const side of ['L', 'R']) this.drawAgents(ctx, side, st);
+    this.drawGapHaze(ctx, st);
+    for (const side of ['L', 'R']) this.drawNeedles(ctx, side, st);
+    for (const side of ['L', 'R']) this.drawRing(ctx, side, st);
+    this.drawCenter(ctx, st);
+    this.drawComets(ctx, st);
+    this.drawCaptions(ctx, st);
+    this.drawCard(ctx, st);
+    this.drawBanner(ctx, st);
+    ctx.restore();
+  }
 
-    // Terminal window bar
-    ['#ef4444', '#f59e0b', '#10b981'].forEach((col, i) => {
-      ctx.fillStyle = col;
-      ctx.beginPath(); ctx.arc(18 + i * 15, topY + 18, 4.5, 0, Math.PI * 2); ctx.fill();
-    });
-    this.text(ctx, 'rea@lab', 72, topY + 22, '#18181b', 11, 700);
-    this.text(ctx, '~ % run rea --disasm 64 --decomp 16', 145, topY + 22, '#57534e', 11);
-    this.text(ctx, `state: ${phaseName}`, 640, topY + 22, '#18181b', 11, 700);
+  sector(ctx, ring, r0, r1, d0, d1) {
+    ctx.beginPath();
+    ctx.arc(ring.cx, ring.cy, r1, ring.ang0 + d0 * DEG, ring.ang0 + d1 * DEG);
+    ctx.arc(ring.cx, ring.cy, r0, ring.ang0 + d1 * DEG, ring.ang0 + d0 * DEG, true);
+    ctx.closePath();
+  }
 
-    // 6 columns layout: [x, w, title, rightSub]
-    const cols = [
-      [8, 150, 'disasm', '64 agents'],
-      [164, 150, 'decomp', '16 agents'],
-      [320, 150, 'handoff', 'gap'],
-      [476, 260, 'code', 'rea.ts · live'],
-      [742, 160, 'mesh', 'sphere'],
-      [908, 164, 'sync', 'SIM'],
+  // Linking state: combed fibres = a fine angular profile (0.05°, radially constant) times a 1° × 6-radius
+  // tone map (fibre density, agent shading). Static, so it is painted once into a world-space cache.
+  paintWashB(ctx, side) {
+    const ring = RINGS[side];
+    const { webB, mod } = TAB[side];
+    const r1 = 906;
+    const [px, py] = ringXY(ring, 0, FIBRE_E[side]);
+    const fan = { cx: px, cy: py, ang0: ring.ang0 };
+    ctx.save();
+    this.sector(ctx, ring, 560, r1, -48, 48);
+    ctx.clip();
+    for (let i = 0; i < webB.length; i++) {
+      const d = WP_T0 + i * WP_STEP;
+      ctx.fillStyle = rgb(gain(webB[i]));
+      this.sector(ctx, fan, 400, 1000, d - 0.5 * WP_STEP, d + 0.75 * WP_STEP);
+      ctx.fill();
+    }
+    ctx.fillStyle = rgb(gain(webB[0]));
+    this.sector(ctx, fan, 400, 1000, -50, WP_T0);
+    ctx.fill();
+    ctx.fillStyle = rgb(gain(webB[webB.length - 1]));
+    this.sector(ctx, fan, 400, 1000, WP_T0 + (webB.length - 1) * WP_STEP, 50);
+    ctx.fill();
+    ctx.restore();
+    const fade = ctx.createRadialGradient(ring.cx, ring.cy, 560, ring.cx, ring.cy, 700);
+    fade.addColorStop(0, BG);
+    fade.addColorStop(1, 'rgba(253,253,253,0)');
+    ctx.fillStyle = fade;
+    this.sector(ctx, ring, 559, 701, -47, 47);
+    ctx.fill();
+    ctx.save();
+    ctx.globalCompositeOperation = 'multiply';
+    const rows = mod.length;
+    this.sector(ctx, ring, 560, 907, -48, 48);
+    ctx.clip();
+    for (let deg = MOD_T0 - 0.5; deg < MOD_T0 + rows - 0.5; deg += 0.25) {
+      const f = clamp(deg + 0.125 - MOD_T0, 0, rows - 1);
+      const j0 = Math.min(rows - 2, Math.floor(f)), u = f - j0;
+      const g = ctx.createRadialGradient(px, py, 470, px, py, 870);
+      for (let k = 0; k < 6; k++) g.addColorStop((MOD_R[k] - 470) / 400, rgb(mix(mod[j0][k], mod[j0 + 1][k], u)));
+      ctx.fillStyle = g;
+      this.sector(ctx, fan, 470, 870, deg, deg + 0.25);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // Loading state: tangled-web wash on a 2° × 7-radius grid (interpolated 0.5° wedges).
+  paintWashA(ctx, side) {
+    const ring = RINGS[side];
+    const { webA } = TAB[side];
+    const r0 = 380, r1 = 906, STEP = 0.5;
+    for (let deg = -45; deg < 45; deg += STEP) {
+      const f = clamp((deg + STEP / 2 + 44) / 2, 0, 44);
+      const j0 = Math.min(43, Math.floor(f)), u = f - j0;
+      const g = ctx.createRadialGradient(ring.cx, ring.cy, r0, ring.cx, ring.cy, r1);
+      const ca = k => mix(webA[j0][k], webA[j0 + 1][k], u);
+      g.addColorStop(0, rgb(ca(0)));
+      for (let k = 0; k < 7; k++) g.addColorStop((WEB_RADII[k] - r0) / (r1 - r0), rgb(ca(k)));
+      g.addColorStop(1, rgb(ca(6)));
+      ctx.fillStyle = g;
+      this.sector(ctx, ring, r0, r1, deg, deg + STEP * 1.25);
+      ctx.fill();
+    }
+  }
+
+  // World-space cache of a static wash (null when no offscreen canvas exists, e.g. the test mock).
+  // `paint` is either a vector painter (g, side) or, with perPixel, a ring-polar colour function.
+  layer(key, side, r0, scale, paint, perPixel = false) {
+    if (this.cache.has(key)) return this.cache.get(key);
+    this.cache.set(key, null);
+    const ring = RINGS[side];
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (let d = -48; d <= 48; d += 1) for (const r of [r0, 910]) {
+      const [x, y] = ringXY(ring, d * DEG, r);
+      x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y);
+    }
+    x0 = Math.floor(x0 - 4); y0 = Math.floor(y0 - 4);
+    const w = Math.ceil(x1 + 4 - x0), h = Math.ceil(y1 + 4 - y0);
+    const pw = Math.ceil(w * scale), ph = Math.ceil(h * scale);
+    const c = makeCanvas(pw, ph);
+    const g = c && c.getContext ? c.getContext('2d') : null;
+    if (!g || typeof g.createImageData !== 'function') return null;
+    if (!perPixel) {
+      g.setTransform(scale, 0, 0, scale, -x0 * scale, -y0 * scale);
+      paint(g, side);
+      const entry = { c, x0, y0, w, h };
+      this.cache.set(key, entry);
+      return entry;
+    }
+    const colourAt = paint;
+    const img = g.createImageData(pw, ph);
+    const data = img.data;
+    const out = [0, 0, 0, 0];
+    const flip = ring.sign < 0 ? -1 : 1; // ang0 is 0 (left) or π (right)
+    for (let py = 0; py < ph; py++) {
+      const wy = (y0 + (py + 0.5) / scale - ring.cy) * flip;
+      for (let px = 0; px < pw; px++) {
+        const wx = (x0 + (px + 0.5) / scale - ring.cx) * flip;
+        const r = Math.sqrt(wx * wx + wy * wy);
+        if (r < r0 || r > 909 || wx <= 0) continue;
+        const th = Math.atan2(wy, wx) / DEG;
+        if (th < -48 || th > 48) continue;
+        colourAt(th, r, out);
+        const o = (py * pw + px) * 4;
+        data[o] = out[0]; data[o + 1] = out[1]; data[o + 2] = out[2]; data[o + 3] = out[3];
+      }
+    }
+    g.putImageData(img, 0, 0);
+    const entry = { c, x0, y0, w, h };
+    this.cache.set(key, entry);
+    return entry;
+  }
+
+  // Combed web, per pixel: colour = fibre profile at angle ψ about the convergence point (linear in ψ),
+  // faded in from the inner edge, times the ψ × distance tone map. Per-pixel sampling avoids the moiré
+  // that sub-pixel vector wedges produce.
+  washBAt(side) {
+    const ring = RINGS[side];
+    const { webB, mod } = TAB[side];
+    const n = webB.length, rows = mod.length;
+    const E = FIBRE_E[side];
+    return (th, r, out) => {
+      // ring-polar (θ°, r) -> fibre-polar (ψ°, t)
+      const x = r * Math.cos(th * DEG) - E, y = r * Math.sin(th * DEG);
+      const psi = Math.atan2(y, x) / DEG, t = Math.sqrt(x * x + y * y);
+      const f = clamp((psi - WP_T0) / WP_STEP, 0, n - 1);
+      const i0 = Math.min(n - 2, Math.floor(f)), u = f - i0;
+      const fm = clamp(psi - MOD_T0, 0, rows - 1);
+      const j0 = Math.min(rows - 2, Math.floor(fm)), v = fm - j0;
+      const fr = clamp((t - MOD_R[0]) / 60, 0, 5);
+      const k0 = Math.min(4, Math.floor(fr)), w = fr - k0;
+      const fadeIn = smooth(560, 700, r);
+      for (let c = 0; c < 3; c++) {
+        const p = 255 - (255 - (webB[i0][c] + (webB[i0 + 1][c] - webB[i0][c]) * u)) * WASH_GAIN;
+        const m0 = mod[j0][k0][c] + (mod[j0][k0 + 1][c] - mod[j0][k0][c]) * w;
+        const m1 = mod[j0 + 1][k0][c] + (mod[j0 + 1][k0 + 1][c] - mod[j0 + 1][k0][c]) * w;
+        out[c] = ((253 + (p - 253) * fadeIn) * (m0 + (m1 - m0) * v)) / 255;
+      }
+      out[3] = 255 * (1 - smooth(905, 909, r)) * smooth(556, 560, r);
+    };
+  }
+
+  washAAt(side) {
+    const { webA } = TAB[side];
+    return (th, r, out) => {
+      const f = clamp((th + 44) / 2, 0, 44);
+      const j0 = Math.min(43, Math.floor(f)), u = f - j0;
+      let k0 = 0;
+      while (k0 < 5 && r > WEB_RADII[k0 + 1]) k0++;
+      const w = clamp((r - WEB_RADII[k0]) / (WEB_RADII[k0 + 1] - WEB_RADII[k0]), 0, 1);
+      for (let c = 0; c < 3; c++) {
+        const a = webA[j0][k0][c] + (webA[j0][k0 + 1][c] - webA[j0][k0][c]) * w;
+        const b = webA[j0 + 1][k0][c] + (webA[j0 + 1][k0 + 1][c] - webA[j0 + 1][k0][c]) * w;
+        out[c] = a + (b - a) * u;
+      }
+      out[3] = 255 * (1 - smooth(905, 909, r));
+    };
+  }
+
+  washLayers(side) {
+    return [
+      this.layer(`B${side}`, side, 556, 1.25, this.washBAt(side), true),
+      this.layer(`A${side}`, side, 376, 0.5, this.washAAt(side), true),
     ];
+  }
 
-    const panelY = topY + 34, panelH = 434;
-    for (const [x, w, title, sub] of cols) {
-      ctx.fillStyle = '#fcfbf9';
-      ctx.fillRect(x, panelY, w, panelH);
-      ctx.strokeStyle = '#e5e3dc';
-      ctx.strokeRect(x + 0.5, panelY + 0.5, w - 1, panelH - 1);
-      this.text(ctx, `▪ ${title}`, x + 8, panelY + 18, '#18181b', 10.5, 700);
-      this.text(ctx, sub, x + w - 8, panelY + 18, '#78716c', 9.5, 400, 'right');
+  drawWash(ctx, side, st) {
+    const s = st.s;
+    const [LB, LA] = this.washLayers(side);
+    if (s > 0.004) {
+      if (LB) ctx.drawImage(LB.c, LB.x0, LB.y0, LB.w, LB.h);
+      else this.paintWashB(ctx, side);
     }
+    if (s >= 0.996) return;
+    ctx.save();
+    ctx.globalAlpha = 1 - s;
+    if (LA) ctx.drawImage(LA.c, LA.x0, LA.y0, LA.w, LA.h);
+    else this.paintWashA(ctx, side);
+    ctx.restore();
+  }
 
-    // Col 1: disasm
-    const c1 = 8;
-    for (let q = 0; q < 7; q++) {
-      const y = panelY + 42 + q * 20;
-      this.text(ctx, `q${q + 1}`, c1 + 8, y + 7, '#78716c', 9);
-      const bw = (0.28 + fract(Math.sin(q * 3.1 + t * 0.6) * 0.5 + 0.5) * 0.68) * 108;
-      ctx.fillStyle = q % 2 === 0 ? '#dc2626' : '#b91c1c';
-      ctx.fillRect(c1 + 26, y, bw, 8);
-    }
-    this.text(ctx, 'lifted', c1 + 8, panelY + 210, '#78716c', 9.5);
-    this.text(ctx, lifted.toLocaleString(), c1 + 8, panelY + 242, '#c2410c', 26, 700);
-    this.text(ctx, 'heat', c1 + 8, panelY + 285, '#78716c', 9.5);
-    const heatCols = ['#291d18', '#7c2d12', '#c2410c', '#f59e0b', '#fca5a5', '#f3e8ff', '#fde68a'];
-    for (let r = 0; r < 4; r++) {
-      for (let c = 0; c < 8; c++) {
-        ctx.fillStyle = heatCols[Math.floor(rand(r * 8 + c + Math.floor(t * 2)) * heatCols.length)];
-        ctx.fillRect(c1 + 8 + c * 16.5, panelY + 296 + r * 18, 13, 13);
-      }
-    }
-    this.text(ctx, `redo ${flagged}`, c1 + 8, panelY + 418, '#57534e', 9.5);
-
-    // Col 2: decomp
-    const c2 = 164;
-    for (let col = 0; col < 12; col++) {
-      const blocks = 2 + Math.floor(rand(col * 7 + Math.floor(t * 1.5)) * 8);
-      for (let b = 0; b < blocks; b++) {
-        ctx.fillStyle = b >= blocks - 2 ? '#2563eb' : '#14532d';
-        ctx.fillRect(c2 + 10 + col * 11, panelY + 150 - b * 11, 8.5, 8.5);
-      }
-    }
-    this.text(ctx, 'decompiled', c2 + 8, panelY + 225, '#78716c', 9.5);
-    this.text(ctx, decompiled.toLocaleString(), c2 + 8, panelY + 258, '#0f766e', 26, 700);
-    const decompBars = [['verify', 0.82, '#14532d'], ['align', 0.48, '#2563eb'], ['ship', 0.64, '#7c3aed'], ['bounce', 0.35, '#db2777']];
-    decompBars.forEach(([lbl, ratio, col], idx) => {
-      const y = panelY + 315 + idx * 24;
-      this.text(ctx, lbl, c2 + 8, y, '#18181b', 9.5);
-      ctx.fillStyle = col;
-      ctx.fillRect(c2 + 52, y - 7, 84 * ratio, 7);
-    });
-
-    // Col 3: handoff
-    const c3 = 320;
-    for (let r = 0; r < 7; r++) {
-      for (let c = 0; c < 6; c++) {
-        const idx = r * 6 + c;
-        const active = idx < Math.floor(progress * 42);
-        ctx.fillStyle = !active ? '#e5e3dc' : idx % 5 === 0 ? '#db2777' : idx % 2 === 0 ? '#0f766e' : '#18181b';
+  drawStrands(ctx, side, st) {
+    const ring = RINGS[side];
+    const k = st.comb;
+    const s = st.s;
+    const list = this.strands[side];
+    const sway = st.motion * 0.012;
+    const webB = TAB[side].webB;
+    const fadeOut = 1 - 0.92 * s;
+    if (fadeOut < 0.02) return;
+    const toneA = side === 'L'
+      ? [[84, 50, 38], [150, 88, 68], [226, 160, 140]]
+      : [[40, 58, 92], [74, 108, 156], [160, 192, 228]];
+    for (let cls = 0; cls < 3; cls++) {
+      for (let bin = 0; bin < 22; bin++) {
+        const band = profileAt(webB, -44 + bin * 4 + 2);
+        const toneB = cls === 0 ? band.map(v => v * 0.52) : cls === 1 ? band.map(v => v * 0.8) : band.map(v => 255 - (255 - v) * 0.6);
+        const col = mix(toneA[cls], toneB, s);
+        let any = false;
         ctx.beginPath();
-        ctx.arc(c3 + 22 + c * 21, panelY + 46 + r * 21, 5.2, 0, Math.PI * 2);
+        for (const f of list) {
+          if (f.cls !== cls || f.bin !== bin) continue;
+          any = true;
+          const w = st.motion ? Math.sin(st.t * 0.9 + f.bend * 9) * sway * (1 - k) : 0;
+          const ta = lerp(f.t1, f.ca, k) + w, tb = lerp(f.t2, f.cb, k) - w;
+          const ra = lerp(f.r1, f.cra, k), rb = lerp(f.r2, f.crb, k);
+          const [x1, y1] = ringXY(ring, ta, ra);
+          const [x2, y2] = ringXY(ring, tb, rb);
+          const dx = x2 - x1, dy = y2 - y1;
+          const b = f.bend * (1 - k);
+          const cx = (x1 + x2) / 2 - dy * b, cy = (y1 + y2) / 2 + dx * b;
+          ctx.moveTo(x1, y1);
+          ctx.quadraticCurveTo(cx, cy, x2, y2);
+        }
+        if (!any) continue;
+        const proto = list.find(f => f.cls === cls);
+        ctx.lineWidth = proto.w * (1 + 0.5 * s * (cls === 0 ? 1 : 0.4));
+        ctx.strokeStyle = rgb(col, proto.a * (1 + 0.35 * s) * fadeOut);
+        ctx.stroke();
+      }
+    }
+  }
+
+  drawAgents(ctx, side, st) {
+    const s = st.s;
+    const chain = side === 'L' ? CHAIN_L : CHAIN_R;
+    const halo = side === 'L' ? [244, 63, 94] : [20, 150, 160];
+    const ringCol = side === 'L' ? '#3b1d16' : '#0f2f4a';
+    const blobs = BLOBS[side];
+    for (const [set, a] of [[blobs.A, 1 - s], [blobs.B, s]]) {
+      if (a <= 0.01) continue;
+      for (const [x, y, r, c, al] of set) {
+        const g = ctx.createRadialGradient(x, y, 0, x, y, r * 1.6);
+        const cc = hexC(c);
+        g.addColorStop(0, rgb(cc, al * a));
+        g.addColorStop(0.45, rgb(cc, al * a * 0.75));
+        g.addColorStop(1, rgb(cc, 0));
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(x, y, r * 1.6, 0, TAU);
         ctx.fill();
       }
     }
-    this.text(ctx, 'flag rate', c3 + 8, panelY + 275, '#78716c', 9.5);
-    const flagRate = (38.0 - progress * 16.5).toFixed(1);
-    this.text(ctx, `${flagRate}%`, c3 + 8, panelY + 310, '#db2777', 26, 700);
-    for (let i = 0; i < 16; i++) {
-      ctx.fillStyle = i < 10 ? '#db2777' : '#f9a8d4';
-      ctx.fillRect(c3 + 8 + i * 7, panelY + 330, 4.5, 12);
-    }
-    this.text(ctx, `in flight ${14 + Math.floor(Math.sin(t * 2) * 6 + 6)}`, c3 + 8, panelY + 418, '#57534e', 9.5);
-
-    // Col 4: code rea.ts · live
-    const c4 = 476;
-    const activeLine = Math.floor(t * 2.5) % CODE_LINES.length;
-    CODE_LINES.forEach((line, idx) => {
-      const y = panelY + 42 + idx * 20;
-      if (idx === activeLine) {
-        ctx.fillStyle = 'rgba(219, 39, 119, 0.10)';
-        ctx.fillRect(c4 + 2, y - 12, 256, 17);
-      }
-      const isComment = line.startsWith('//');
-      const col = isComment ? '#9ca3af' : idx === activeLine ? '#be185d' : '#27272a';
-      this.text(ctx, line, c4 + 10, y, col, 9.5, idx === activeLine ? 700 : 400);
-    });
-
-    // Col 5: mesh sphere
-    const c5 = 742;
-    const scx = c5 + 80, scy = panelY + 125, sr = 58;
-    for (let i = 0; i < 96; i++) {
-      const yy = 1 - (i + 0.5) / 96 * 2;
-      const ring = Math.sqrt(1 - yy * yy);
-      const a = i * 2.39996 + t * 0.7;
-      const xx = Math.cos(a) * ring;
-      const zz = Math.sin(a) * ring;
-      if (zz < -0.2) continue;
-      ctx.fillStyle = i % 7 === 0 ? '#7c3aed' : i % 5 === 0 ? '#0f766e' : '#18181b';
+    // chain links + nodes (the checker chain dissolves into its agent blobs once the rings link)
+    const chainA = side === 'L' ? 1 : 1 - s;
+    if (chainA < 0.02) return;
+    ctx.save();
+    ctx.globalAlpha = chainA;
+    ctx.strokeStyle = side === 'L' ? 'rgba(120,60,50,0.35)' : 'rgba(30,70,110,0.35)';
+    ctx.lineWidth = 0.9;
+    ctx.beginPath();
+    chain.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+    ctx.stroke();
+    chain.forEach(([x, y], i) => {
+      const pulse = 1 + 0.18 * st.motion * lock(st.t, i * 0.7, 1);
+      const g = ctx.createRadialGradient(x, y, 0, x, y, 12 * pulse);
+      g.addColorStop(0, rgb(halo, 0.42));
+      g.addColorStop(0.55, rgb(halo, 0.2));
+      g.addColorStop(1, rgb(halo, 0));
+      ctx.fillStyle = g;
       ctx.beginPath();
-      ctx.arc(scx + xx * sr, scy + yy * sr, zz > 0.3 ? 3 : 2, 0, Math.PI * 2);
+      ctx.arc(x, y, 12 * pulse, 0, TAU);
       ctx.fill();
-    }
-    this.text(ctx, 'phase gap', c5 + 8, panelY + 265, '#78716c', 9.5);
-    this.text(ctx, `Δ ${phaseGap}`, c5 + 8, panelY + 300, '#7c3aed', 24, 700);
-    this.text(ctx, 'aligned', c5 + 8, panelY + 322, '#18181b', 9.5, 700);
-    ctx.fillStyle = '#7c3aed';
-    ctx.fillRect(c5 + 8, panelY + 332, 130 * (1 - Number(phaseGap)), 6);
-    this.text(ctx, 'disasm  8 waves', c5 + 8, panelY + 388, '#57534e', 9.5);
-    this.text(ctx, 'decomp  8 waves', c5 + 8, panelY + 408, '#57534e', 9.5);
-
-    // Col 6: sync SIM
-    const c6 = 908;
-    this.text(ctx, 'in sync', c6 + 8, panelY + 42, '#78716c', 9.5);
-    this.text(ctx, `${syncPct}%`, c6 + 8, panelY + 76, '#18181b', 26, 700);
-    // Dual sine waves
-    for (const [phaseOff, col] of [[0, '#c2410c'], [Number(phaseGap) * 3.2, '#0f766e']]) {
+      ctx.fillStyle = '#fffaf7';
+      ctx.strokeStyle = ringCol;
+      ctx.lineWidth = 1.5;
       ctx.beginPath();
-      for (let x = 0; x <= 146; x += 2) {
-        const y = panelY + 145 + Math.sin(x * 0.095 - t * 3.2 + phaseOff) * 28;
-        x === 0 ? ctx.moveTo(c6 + 9 + x, y) : ctx.lineTo(c6 + 9 + x, y);
-      }
-      ctx.strokeStyle = col;
-      ctx.lineWidth = 2;
+      ctx.arc(x, y, 3.6, 0, TAU);
+      ctx.fill();
+      ctx.stroke();
+    });
+    ctx.restore();
+  }
+
+  drawGapHaze(ctx, st) {
+    const g = ctx.createRadialGradient(0, 20, 0, 0, 20, 330);
+    g.addColorStop(0, `rgba(250,226,236,${0.55 + 0.25 * st.s})`);
+    g.addColorStop(0.5, 'rgba(250,230,240,0.32)');
+    g.addColorStop(1, 'rgba(250,230,240,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.ellipse(0, 20, 300, 520, 0, 0, TAU);
+    ctx.fill();
+  }
+
+  drawNeedles(ctx, side, st) {
+    const ring = RINGS[side];
+    const tA = TAB[side].A, tB = TAB[side].B;
+    const s = st.s;
+    const A = lerp(50, 60, s) * DEG, B = lerp(26, 50, s) * DEG;
+    const th0 = lerp(LATTICE.A[side][0], LATTICE.B[side][0], s);
+    const pitch = lerp(LATTICE.A[side][1], LATTICE.B[side][1], s);
+    const pr = pitch * DEG;
+    const seg = this.segBuf;
+    const grads = this.gradBuf;
+    const breathe = 0.06 * st.motion;
+    const n = 2 * KMAX + 1;
+    let m = 0;
+    for (let i = 0; i < n; i++) {
+      const th = (th0 + (i - KMAX) * pitch) * DEG;
+      const osc = breathe ? breathe * lock(st.t, th * 18 + (side === 'L' ? 0 : 2), 1) : 0;
+      const L = lerp(tA.len[i], tB.len[i], s) * (1 + osc);
+      if (L < 1.5) { grads[i] = null; continue; }
+      const a = ring.ang0 + th;
+      const bx = ring.cx + Math.cos(a) * R_NEEDLE;
+      const by = ring.cy + Math.sin(a) * R_NEEDLE;
+      const phi = A * Math.tanh(th / B);
+      const ux = ring.sign * Math.cos(phi), uy = ring.sign * Math.sin(phi);
+      const ex = bx + ux * L, ey = by + uy * L;
+      const g = ctx.createLinearGradient(bx, by, ex, ey);
+      const c0 = mix(tA.body[0][i], tB.body[0][i], s);
+      const c1 = mix(tA.body[1][i], tB.body[1][i], s);
+      const c2 = mix(tA.body[2][i], tB.body[2][i], s);
+      g.addColorStop(0, rgb(mix(c0, [252, 226, 232], 0.35)));
+      g.addColorStop(0.16, rgb(c0));
+      g.addColorStop(0.47, rgb(c1));
+      g.addColorStop(0.8, rgb(c2));
+      g.addColorStop(1, rgb(c2));
+      const dphi = (A / B) / Math.cosh(th / B) ** 2;
+      const spacing = pr * (R_NEEDLE * Math.cos(phi - th) + 0.55 * L * dphi);
+      ctx.strokeStyle = g;
+      ctx.lineWidth = Math.max(spacing * 1.05, 1.2);
+      ctx.beginPath();
+      ctx.moveTo(bx, by);
+      ctx.lineTo(ex, ey);
+      ctx.stroke();
+      grads[i] = g;
+      seg[i * 4] = bx; seg[i * 4 + 1] = by; seg[i * 4 + 2] = ex; seg[i * 4 + 3] = ey;
+      m++;
+    }
+    if (!m) return;
+    ctx.globalCompositeOperation = 'multiply';
+    ctx.lineWidth = CORE_W;
+    for (let i = 0; i < n; i++) {
+      const g = grads[i];
+      if (!g) continue;
+      ctx.strokeStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(seg[i * 4], seg[i * 4 + 1]);
+      ctx.lineTo(seg[i * 4 + 2], seg[i * 4 + 3]);
       ctx.stroke();
     }
-    this.text(ctx, 'crossings', c6 + 8, panelY + 245, '#78716c', 9.5);
-    this.text(ctx, Math.floor(progress * 1790).toLocaleString(), c6 + 8, panelY + 278, '#18181b', 22, 700);
-    const totals = [['lifted', lifted], ['decompiled', decompiled], ['flagged', flagged]];
-    totals.forEach(([k, v], i) => {
-      const y = panelY + 355 + i * 22;
-      this.text(ctx, k, c6 + 8, y, '#57534e', 9.5);
-      this.text(ctx, v.toLocaleString(), c6 + 154, y, '#18181b', 9.5, 700, 'right');
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  drawRing(ctx, side, st) {
+    const ring = RINGS[side];
+    const z = st.zoom;
+    const a0 = ring.ang0 - 52 * DEG, a1 = ring.ang0 + 52 * DEG;
+    // opaque label band
+    ctx.fillStyle = BG;
+    ctx.beginPath();
+    ctx.arc(ring.cx, ring.cy, R_EDGE + 1.5, a0, a1);
+    ctx.arc(ring.cx, ring.cy, R_TRACK + 0.6, a1, a0, true);
+    ctx.closePath();
+    ctx.fill();
+    // ruler ticks
+    ctx.strokeStyle = 'rgba(150,150,150,0.75)';
+    ctx.lineWidth = 0.75;
+    ctx.beginPath();
+    for (let th = -52; th <= 52; th += 0.31) {
+      const long = Math.abs(Math.round(th / 0.31)) % 5 === 0;
+      const [x0, y0] = ringXY(ring, th * DEG, R_TICK0 + (long ? 0 : 3));
+      const [x1, y1] = ringXY(ring, th * DEG, R_TICK1);
+      ctx.moveTo(x0, y0);
+      ctx.lineTo(x1, y1);
+    }
+    ctx.stroke();
+    // band edge + second track (draws in while linking)
+    ctx.strokeStyle = 'rgba(206,200,206,0.9)';
+    ctx.lineWidth = 0.9;
+    ctx.beginPath();
+    ctx.arc(ring.cx, ring.cy, R_EDGE, a0, a1);
+    ctx.stroke();
+    if (st.s > 0.01) {
+      ctx.strokeStyle = rgb([112, 108, 114], 0.95 * st.s);
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.arc(ring.cx, ring.cy, R_LINE2, a0, a1);
+      ctx.stroke();
+    }
+    // labels
+    const labels = side === 'L' ? LEFT_LABELS : RIGHT_LABELS;
+    const phase = side === 'L' ? st.labelL : st.labelR;
+    const base = ((phase % 9.95) + 9.95) % 9.95;
+    ctx.textBaseline = 'middle';
+    for (let k = -42; k <= 42; k++) {
+      const thDeg = side === 'L' ? base + k * LABEL_STEP : base - k * LABEL_STEP;
+      if (thDeg < -50 || thDeg > 50) continue;
+      const idx = (((k % 8) + 8 + 7) % 8);
+      const label = labels[idx];
+      // the checker ring drops its bold cursor once the rings are linked
+      const bold = idx === 7 && (side === 'L' || st.s < 0.5);
+      const pink = side === 'L' && idx === 1;
+      const th = thDeg * DEG;
+      const [x, y] = ringXY(ring, th, 920);
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(th);
+      ctx.font = `${bold ? 800 : 500} ${9.3}px ${MONO}`;
+      ctx.textAlign = side === 'L' ? 'left' : 'right';
+      ctx.fillStyle = bold ? '#141414' : pink ? '#d26a8a' : side === 'L' ? '#6c6461' : '#5d6672';
+      ctx.fillText(label, 0, 0);
+      ctx.restore();
+    }
+    ctx.textBaseline = 'alphabetic';
+    // track
+    ctx.strokeStyle = side === 'L' ? '#6b5146' : '#11504b';
+    ctx.lineWidth = side === 'L' ? 1.5 : 2.6;
+    if (side === 'R') {
+      ctx.save();
+      ctx.shadowColor = 'rgba(20,140,130,0.45)';
+      ctx.shadowBlur = 4 * z;
+    }
+    ctx.beginPath();
+    ctx.arc(ring.cx, ring.cy, R_TRACK, a0, a1);
+    ctx.stroke();
+    if (side === 'R') ctx.restore();
+    // scan heads (indicator bars)
+    const bars = side === 'L'
+      ? [[R_BAR1, st.bars.L1, '#0b0b0b'], [R_LINE2, st.bars.L2, '#0b0b0b']]
+      : [[R_BAR1, st.bars.R1, '#0b0b0b'], [R_LINE2, st.bars.R2, '#28307a']];
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 4.6;
+    for (const [r, deg, col] of bars) {
+      ctx.strokeStyle = col;
+      ctx.beginPath();
+      if (side === 'L') ctx.arc(ring.cx, ring.cy, r, (deg - 3.5) * DEG, (deg + 3.5) * DEG);
+      else ctx.arc(ring.cx, ring.cy, r, Math.PI + (deg - 3.5) * DEG, Math.PI + (deg + 3.5) * DEG);
+      ctx.stroke();
+    }
+    ctx.lineCap = 'butt';
+  }
+
+  drawCenter(ctx, st) {
+    const z = st.zoom;
+    const s = st.s;
+    // dashed centre line (constant on screen)
+    ctx.save();
+    ctx.setLineDash([4 / z, 6 / z]);
+    ctx.lineDashOffset = -st.t * 6 * st.motion / z;
+    ctx.strokeStyle = 'rgba(150,154,165,0.85)';
+    ctx.lineWidth = 1 / z;
+    ctx.beginPath();
+    ctx.moveTo(0, -760);
+    ctx.lineTo(0, 760);
+    ctx.stroke();
+    ctx.restore();
+    // diamond glow
+    const glowCol = mix([245, 197, 66], [244, 140, 170], s);
+    const gg = ctx.createRadialGradient(0, 0, 0, 0, 0, lerp(34, 52, s));
+    gg.addColorStop(0, rgb(glowCol, 0.5));
+    gg.addColorStop(0.5, rgb(glowCol, 0.18));
+    gg.addColorStop(1, rgb(glowCol, 0));
+    ctx.fillStyle = gg;
+    ctx.beginPath();
+    ctx.arc(0, 0, lerp(34, 52, s), 0, TAU);
+    ctx.fill();
+    // diamond (spins as the rings link)
+    const side = lerp(22, 33.5, s);
+    const rot = (45 + 54 * (st.t / 14)) * DEG;
+    ctx.save();
+    ctx.translate(lerp(0, 1.7, s), lerp(0, -0.6, s));
+    ctx.rotate(rot);
+    roundRect(ctx, -side / 2, -side / 2, side, side, lerp(1, 4, s));
+    ctx.fillStyle = rgb(mix([245, 230, 192], [253, 251, 245], s));
+    ctx.fill();
+    ctx.lineWidth = lerp(2.3, 2.1, s);
+    ctx.strokeStyle = '#2a1d12';
+    ctx.stroke();
+    ctx.restore();
+    txt(ctx, 'HANDOFF', 0, -33, 11.4, 800, '#22160b', 'center');
+    txt(ctx, `Δφ ${st.gapCenter.toFixed(2)}`, 0, 44, 11.8, 700, '#2b1a26', 'center');
+  }
+
+  drawComets(ctx, st) {
+    if (st.live <= 0.01) return;
+    const span = 520;
+    for (const [y, v, x14, size, core] of COMETS) {
+      // phase chosen so the head sits at x14 at the linking keyframe (t = 14)
+      const phase = (v > 0 ? x14 + span / 2 : span / 2 - x14) / span - (Math.abs(v) * 14) / span;
+      let u = phase + (Math.abs(v) * st.t) / span;
+      u = ((u % 1) + 1) % 1;
+      const x = v > 0 ? -span / 2 + u * span : span / 2 - u * span;
+      const fade = smooth(0, 0.12, u) * (1 - smooth(0.88, 1, u)) * st.live;
+      if (fade < 0.02) continue;
+      const dir = Math.sign(v);
+      const tail = 48 * size;
+      const tg = ctx.createLinearGradient(x - dir * tail, y, x, y);
+      tg.addColorStop(0, rgb([60, 30, 60], 0));
+      tg.addColorStop(1, rgb([60, 24, 52], 0.75 * fade));
+      ctx.strokeStyle = tg;
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(x - dir * tail, y);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+      const g = ctx.createRadialGradient(x, y, 0, x, y, 13 * size);
+      g.addColorStop(0, rgb(core, 0.85 * fade));
+      g.addColorStop(0.35, rgb([236, 72, 153], 0.4 * fade));
+      g.addColorStop(1, rgb([236, 72, 153], 0));
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(x, y, 13 * size, 0, TAU);
+      ctx.fill();
+      ctx.fillStyle = rgb(core.map(v2 => v2 * 0.7), fade);
+      ctx.beginPath();
+      ctx.arc(x, y, 3.4 * size, 0, TAU);
+      ctx.fill();
+    }
+  }
+
+  drawCaptions(ctx, st) {
+    const capWord = st.state === 'loading' ? '01 LOADING' : st.state === 'linking' ? '02 LINKING' : '03 VERIFIED';
+    txt(ctx, capWord, -599.4, -561.1, 16.5, 800, '#141414');
+    // DISASM card (top-left of the left web)
+    ctx.fillStyle = 'rgba(252,251,247,0.94)';
+    roundRect(ctx, -652.5, -373, 203.75, 66.3, 3);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(214,212,208,0.9)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    const bronze = ctx.createLinearGradient(-636, -362, -540, -338);
+    bronze.addColorStop(0, '#6c4126');
+    bronze.addColorStop(1, '#7c5537');
+    txt(ctx, 'DISASM', -636.4, -339.9, 27.4, 800, bronze);
+    txt(ctx, '64 agents · lifting', -636.3, -316.7, 12.1, 500, '#4a4a4a');
+    // DECOMP card (point-symmetric partner)
+    ctx.fillStyle = 'rgba(253,254,254,0.94)';
+    roundRect(ctx, 447.5, 318.3, 205, 66.2, 3);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(176,180,186,0.95)';
+    ctx.lineWidth = 1.1;
+    ctx.stroke();
+    txt(ctx, 'DECOMP', 636.3, 351.4, 29, 800, '#0f4a40', 'right');
+    txt(ctx, '16 agents · decompiling', 636.9, 374.5, 12.6, 500, '#4d4f4e', 'right');
+  }
+
+  drawCard(ctx, st) {
+    const a = st.card;
+    if (a <= 0.01) return;
+    const [x, y, w, h] = CARD_RECT;
+    ctx.save();
+    ctx.globalAlpha = a;
+    // glass: the measured card passes ~half of the needle contrast, so a plain white wash (no blur)
+    ctx.fillStyle = `rgba(255,255,255,${CARD_WHITE})`;
+    roundRect(ctx, x, y, w, h, 5);
+    ctx.fill();
+    // packets in flight behind the glass, smeared into a haze (measured 24×11 tone map, multiplied in)
+    const haze = this.hazeImage();
+    if (haze) {
+      ctx.save();
+      roundRect(ctx, x, y, w, h, 5);
+      ctx.clip();
+      ctx.globalCompositeOperation = 'multiply';
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(haze, x, y, w, h);
+      ctx.restore();
+    }
+    ctx.strokeStyle = 'rgba(150,158,170,0.7)';
+    ctx.lineWidth = 0.9;
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(70,72,80,0.35)';
+    ctx.fillRect(x + 4, y + h, w - 8, 1.1);
+    txt(ctx, 'handoff', x + 30, 143.6, 13.8, 800, '#2b2427');
+    txt(ctx, '·  disasm → decomp', x + 84, 143.6, 13.8, 700, '#5a3f48');
+    txt(ctx, 'functions cross the gap · verify on arrival', x + 30, 161.0, 9.9, 500, '#8a8590');
+    HANDOFF_ROWS.forEach(([id, route, status, prog, vis], i) => {
+      const by = 189.1 + 19.46 * i;
+      ctx.globalAlpha = a * vis;
+      txt(ctx, id, x + 30.7, by, 11.2, 800, '#3a3a3c');
+      txt(ctx, route, x + 90.8, by, 9.4, 500, '#9a96a0');
+      const sc = status === 'PASS' ? '#0f766e' : status === 'REDO' ? '#db2777' : '#a8a29e';
+      txt(ctx, status, x + 198.6, by, 9.2, 800, sc);
+      const bx = x + 263.5, bw = 221.2;
+      ctx.fillStyle = 'rgba(205,208,214,0.55)';
+      ctx.fillRect(bx, by - 4.6, bw, 2.4);
+      ctx.fillStyle = status === 'PASS' ? '#24303d' : status === 'REDO' ? '#e11d74' : '#9ca3af';
+      ctx.fillRect(bx, by - 4.6, bw * prog, 2.4);
     });
+    ctx.restore();
+  }
+
+  hazeImage() {
+    if (this.haze !== undefined) return this.haze;
+    this.haze = null;
+    const c = makeCanvas(HAZE_W, HAZE_H);
+    const x = c && c.getContext ? c.getContext('2d') : null;
+    if (!x || typeof x.createImageData !== 'function') return null;
+    const img = x.createImageData(HAZE_W, HAZE_H);
+    for (let i = 0; i < HAZE_W * HAZE_H; i++) {
+      const p = hexAt(CARD_HAZE, i * 6);
+      img.data[i * 4] = p[0];
+      img.data[i * 4 + 1] = p[1];
+      img.data[i * 4 + 2] = p[2];
+      img.data[i * 4 + 3] = 255;
+    }
+    x.putImageData(img, 0, 0);
+    this.haze = c;
+    return c;
+  }
+
+  drawBanner(ctx, st) {
+    // white backing that hides the rings' lower reaches behind the hero title (world space)
+    const g = ctx.createLinearGradient(0, 424, 0, 452);
+    g.addColorStop(0, 'rgba(253,253,253,0)');
+    g.addColorStop(1, BG);
+    ctx.fillStyle = g;
+    ctx.fillRect(-760, 424, 1056, 28);
+    ctx.fillStyle = BG;
+    ctx.fillRect(-760, 451.5, 1056, 400);
+    // golden-glow rule
+    ctx.save();
+    ctx.shadowColor = 'rgba(245,197,66,0.75)';
+    ctx.shadowBlur = 7 * st.zoom;
+    ctx.fillStyle = '#2b1d0e';
+    ctx.fillRect(-600, 463.3, 6.25, 86.3);
+    ctx.restore();
+    txt(ctx, 'REA. BYTES IN. SOURCE OUT.', -569.4, 508.9, 49.6, 800, '#0d0d0d');
+    txt(ctx, 'disassembler on the left · decompiler on the right', -568.8, 547.0, 19, 500, '#46464b');
+  }
+
+  // ============================================================ top HUD (fixed)
+  drawHud(ctx, st) {
+    ctx.fillStyle = BG;
+    ctx.fillRect(0, 0, W, STAGE_TOP);
+    txt(ctx, 'REA', 12.2, 21.5, 14, 800, '#080808');
+    const lifted = 1840 * st.p, dec = 1320.5 * st.p, flg = 253.4 * st.p;
+    const sync = Math.round(65.26 * st.p);
+    const cols = [
+      ['RUN', 149.5, [['rea-lab-01', '#2c2c30', 500]]],
+      ['LIFTED', 262.5, this.splitNum(lifted, '#9a3412')],
+      ['DECOMPILED', 336.5, this.splitNum(dec, '#064e3b')],
+      ['FLAGGED', 406.5, [[fmt(flg), '#be4a7c', 700]]],
+      ['SYNC', 476.5, [[`${sync}%`, '#0a0a0a', 800]]],
+      ['CAM', 530.5, [['×', '#2563eb', 700], [st.camLabel, '#1e3a8a', 700]]],
+      ['STATE', 594, [[st.state, '#0a0a0a', 800]]],
+      ['SIM', 690, [['illustrative', '#8c8b92', 500]]],
+    ];
+    ctx.font = `600 8px ${MONO}`;
+    const adv8 = ctx.measureText('M').width || 4.8;
+    for (const [label, x, parts] of cols) {
+      txt(ctx, label, x, 10.2, 8, 600, '#a4a3a9');
+      let cx = x + 1;
+      ctx.font = `700 12px ${MONO}`;
+      const adv = ctx.measureText('M').width || 7.2;
+      for (const [str, col, wt] of parts) {
+        txt(ctx, str, cx, 25, 12, wt, col);
+        cx += adv * str.length;
+      }
+    }
+    void adv8;
+    txt(ctx, 'REA · reverse engineering', 1066.5, 21.6, 11.9, 700, '#121a19', 'right');
+  }
+
+  splitNum(v, col) {
+    const s = fmt(v);
+    if (s.length <= 3) return [[s, col, 800]];
+    const head = s.slice(0, s.length - 3);
+    return [[head, '#0b0b0b', 800], [s.slice(-3), col, 800]];
+  }
+
+  // ============================================================ terminal (fixed)
+  drawTerminal(ctx, st) {
+    const top = STAGE_BOTTOM;
+    ctx.fillStyle = '#fcfcfc';
+    ctx.fillRect(0, top, W, H - top);
+    const div = ctx.createLinearGradient(0, 0, W, 0);
+    div.addColorStop(0, 'rgba(160,140,128,0.75)');
+    div.addColorStop(0.24, '#55504c');
+    div.addColorStop(0.72, '#525252');
+    div.addColorStop(1, '#2f5249');
+    ctx.fillStyle = div;
+    ctx.fillRect(0, 1005.4, W, 1.3);
+    // prompt row
+    [['#df1d48', 16], ['#120403', 31.6], ['#0d5a1a', 47.6]].forEach(([c, x]) => {
+      ctx.fillStyle = c;
+      ctx.beginPath();
+      ctx.arc(x, 1022.5, 4.6, 0, TAU);
+      ctx.fill();
+    });
+    txt(ctx, 'rea@lab', 75.5, 1026.5, 11.3, 800, '#050505');
+    const cmdCol = rgb(mix([52, 52, 52], [96, 96, 96], st.s));
+    txt(ctx, '~ % run rea --disasm 64 --decomp 16', 157.5, 1026.5, 11.1, 500, cmdCol);
+    txt(ctx, 'state:', 640.5, 1026.5, 11.3, 800, '#0c0c0c');
+    txt(ctx, st.state, 690, 1026.5, 11.3, 800, '#141414');
+    this.drawEqualizer(ctx, st);
+
+    const panels = [
+      [7.5, 150.5, 'disasm', '64 agents', '#7f1d1d', '#5a3a39', 1],
+      [163.5, 150.5, 'decomp', '16 agents', '#0b1f18', '#1b3530', 1],
+      [319.5, 150.5, 'handoff', 'gap', '#050505', '#050505', 1],
+      [476, 249.5, 'code', 'rea.ts · live', '#1e3a8a', '#3c4f78', 0.45],
+      [731.5, 160.5, 'mesh', 'sphere', '#3b2a99', '#5b3f93', 0.45],
+      [897.5, 174, 'sync', 'SIM', '#050505', '#050505', 1],
+    ];
+    for (const [x, w, title, sub, sq, tc, border] of panels) {
+      ctx.fillStyle = '#ffffff';
+      roundRect(ctx, x, 1040.5, w, 304, 4);
+      ctx.fill();
+      ctx.strokeStyle = border > 0.5 ? '#e2e2e4' : '#eeeeef';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = '#efefef';
+      ctx.fillRect(x + 6, 1061.2, w - 12, 1);
+      ctx.fillStyle = sq;
+      ctx.fillRect(x + 7.8, 1048.2, 5.6, 5.6);
+      txt(ctx, title, x + 18.3, 1055.3, 10.8, 800, tc);
+      txt(ctx, sub, x + w - 9.3, 1055.3, 8.9, 500, title === 'code' ? '#c2c2c6' : '#a1a1a6', 'right');
+    }
+    this.panelDisasm(ctx, st);
+    this.panelDecomp(ctx, st);
+    this.panelHandoff(ctx, st);
+    this.panelCode(ctx, st);
+    this.panelMesh(ctx, st);
+    this.panelSync(ctx, st);
+  }
+
+  drawEqualizer(ctx, st) {
+    const A = [4, 13, 14, 5, 12, 14, 7, 11, 15, 8, 10, 15, 10, 8];
+    const B = [9, 15, 8, 14, 15, 15, 9, 14, 14, 7, 7, 14, 14, 8];
+    for (let i = 0; i < 14; i++) {
+      const osc = st.motion * 4 * lock(st.t, i * 1.3, 2 + (i % 3));
+      const h = clamp(lerp(A[i], B[i], st.s) + osc, 2, 16);
+      ctx.fillStyle = i % 2 ? '#7a140c' : i % 4 === 0 ? '#0b0b0b' : '#0c3d19';
+      ctx.fillRect(980 + 6 * i, 1028.5 - h, 4, h);
+    }
+  }
+
+  panelDisasm(ctx, st) {
+    const A = [40, 106, 76, 88, 101, 55, 109];
+    const B = [66, 60, 28, 47, 67, 56, 36];
+    const colA = ['#c4281a', '#f6346a', '#f42b62', '#fb2a64', '#f23362', '#c82b21', '#f12862'];
+    for (let i = 0; i < 7; i++) {
+      const y = 1077 + 15 * i;
+      txt(ctx, `q${i + 1}`, 16.5, y + 3.6, 8, 500, '#a8a8ab');
+      ctx.fillStyle = '#f3f5f9';
+      ctx.fillRect(34, y - 2.5, 110, 5);
+      const osc = st.motion * 7 * lock(st.t, i * 1.9, 1);
+      const len = clamp(lerp(A[i], B[i], st.s) + osc, 6, 110);
+      const c = mix(hexC(colA[i]), [172, 6, 28], st.s);
+      ctx.fillStyle = rgb(c);
+      ctx.fillRect(34, y - 2.5, len, 5);
+      ctx.fillStyle = 'rgba(40,6,6,0.9)';
+      ctx.fillRect(34, y - 2.5, 1.4, 5);
+      ctx.fillRect(34 + len - 1.6, y - 2.5, 1.6, 5);
+    }
+    txt(ctx, 'lifted', 16.5, 1198.5, 8.6, 500, '#a5a5aa');
+    glowText(ctx, fmt(1840 * st.p), 15.5, 1228.3, 26.5, 800, '#c2410c', 'rgba(249,115,22,0.55)', 7);
+    txt(ctx, 'heat', 16.5, 1250.5, 8.6, 500, '#a5a5aa');
+    const flipOrder = (i) => ((i * 37 + 11) % 55) / 55;
+    for (let r = 0; r < 5; r++) {
+      for (let c = 0; c < 11; c++) {
+        const i = r * 11 + c;
+        const f = smooth(T_START + 0.6 + flipOrder(i) * 8.5, T_START + 1.2 + flipOrder(i) * 8.5, st.t) * (st.s > 0.999 ? 1 : 1);
+        const k = st.t >= 14 ? 1 : f;
+        const back = st.s < 0.999 && st.t > 14 ? 1 - st.s : 0;
+        const col = mix(HEAT.A[i], HEAT.B[i], clamp(k - back, 0, 1));
+        if (col[0] > 246 && col[1] > 236 && col[2] > 236) continue;
+        ctx.fillStyle = rgb(col);
+        roundRect(ctx, 15.2 + 12.3 * c, 1258.6 + 14 * r, 10, 9.8, 1.2);
+        ctx.fill();
+      }
+    }
+    txt(ctx, `redo ${fmt(408.2 * st.p)}`, 16, 1338.4, 9.6, 600, '#2a2a2a');
+  }
+
+  panelDecomp(ctx, st) {
+    const hA = [2, 5, 5, 3, 3, 5, 4, 2, 5, 5, 3, 3];
+    const hB = [8, 9, 12, 5, 12, 12, 9, 9, 12, 5, 5, 12];
+    const green = [12, 52, 26];
+    const blue = [44, 62, 176];
+    const violet = [74, 46, 164];
+    // soft mint bloom behind the decompiled stack
+    ctx.save();
+    ctx.shadowColor = 'rgba(134,239,172,0.85)';
+    ctx.shadowBlur = 3.5;
+    for (let c = 0; c < 12; c++) {
+      const hf = lerp(hA[c], hB[c], st.s);
+      const h = Math.round(hf);
+      for (let r = 0; r < h; r++) {
+        const col = r < 7 ? green : r < 10 ? blue : violet;
+        const fresh = r === h - 1 ? clamp(hf - (h - 1), 0.35, 1) : 1;
+        ctx.shadowColor = r < 7 ? 'rgba(134,239,172,0.85)' : 'rgba(165,180,252,0.6)';
+        ctx.fillStyle = rgb(mix([253, 253, 253], col, fresh));
+        roundRect(ctx, 173 + 11.27 * c, 1190.6 - 10 * r, 7.8, 7, 1.1);
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+    txt(ctx, 'decompiled', 173.5, 1219.2, 8.6, 500, '#c3c3c7');
+    glowText(ctx, fmt(1371.7 * st.p), 171.5, 1247.8, 26.5, 800, '#065f46', 'rgba(110,231,183,0.75)', 8);
+    const bars = [
+      ['verify', 1274, [65, 62], '#0f4d2a'],
+      ['align', 1291, [17, 34], '#1d3fbf'],
+      ['ship', 1308, [13, 58], '#5b21b6'],
+      ['bounce', 1325, [41, 36], '#e11d5c'],
+    ];
+    for (const [label, y, [a, b], col] of bars) {
+      txt(ctx, label, 172, y, 9.6, 500, '#2b2b2e');
+      const len = lerp(a, b, st.s) + st.motion * 3 * lock(st.t, y * 0.1, 1);
+      ctx.fillStyle = col;
+      ctx.fillRect(216, y - 7, Math.max(2, len), 6.5);
+    }
+  }
+
+  panelHandoff(ctx, st) {
+    const n = clamp(Math.round(1 + 69 * Math.min(st.q, 1.02)), 1, 72);
+    for (let i = 0; i < n; i++) {
+      const r = Math.floor(i / 8), c = i % 8;
+      ctx.fillStyle = i % 5 === 4 ? '#d81b5a' : c % 2 ? '#0e3324' : '#050505';
+      ctx.beginPath();
+      ctx.arc(335.5 + 17 * c, 1078 + 13.5 * r, 4.3, 0, TAU);
+      ctx.fill();
+    }
+    txt(ctx, 'flag rate', 330, 1252.5, 8.6, 500, '#b0b0b4');
+    const rate = 38.0 - 14.5 * Math.min(st.q, 1.15);
+    glowText(ctx, `${rate.toFixed(1)}%`, 328.3, 1283.2, 26.5, 800, '#df2268', 'rgba(244,63,94,0.5)', 7);
+    const ticks = Math.round(lerp(23, 15, st.s));
+    for (let i = 0; i < ticks; i++) {
+      ctx.fillStyle = i < Math.round(lerp(14, 12, st.s)) ? '#d9246a' : 'rgba(217,36,106,0.18)';
+      ctx.fillRect(327.5 + 4.6 * i, 1296, 2.4, 11);
+    }
+    txt(ctx, `in flight ${Math.round(14 + 9 * Math.min(st.q, 1.1))}`, 328, 1336.6, 9.6, 600, '#222126');
+  }
+
+  panelCode(ctx, st) {
+    const x0 = 502;
+    ctx.font = `600 9.6px ${MONO}`;
+    const adv = ctx.measureText('M').width || 5.76;
+    const scroll = -4.8 * clamp(st.q, 0, 1);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(477, 1063, 248, 280);
+    ctx.clip();
+    for (let i = 0; i < 20; i++) {
+      const y = 1075.3 + 14.2 * i + scroll;
+      const tau = CODE_TAU[i];
+      const u = st.t - tau;
+      const scrambleP = clamp(u / 0.6, 0, 1);
+      const settle = clamp((u - 0.6) / 1.5, 0, 1);
+      const hl = u < 0 ? 0 : u < 0.6 ? 1 : Math.max(0, 1 - (u - 0.6) / 2.4);
+      if (hl > 0.01) {
+        ctx.fillStyle = `rgba(244,63,94,${(0.08 * hl).toFixed(3)})`;
+        ctx.fillRect(498, y - 10, 222, 13.4);
+      }
+      const gutterA = 1 - 0.88 * st.s;
+      if (gutterA > 0.05) txt(ctx, String((i * 7 + 2) % 30 + 1).padStart(2, '0'), 486.5, y - 0.2, 7.6, 500, rgb([212, 212, 216], gutterA));
+      if (u < 0) {
+        this.codeLine(ctx, CODE_A[i], x0, y, adv, st, 1, 0);
+      } else if (scrambleP < 1) {
+        const target = CODE_B[i];
+        const keep = Math.floor(target.length * scrambleP);
+        let s = target.slice(0, keep);
+        const tick = Math.floor(st.t * 14) + i;
+        for (let j = keep; j < Math.max(target.length, 3); j++) s += SCRAMBLE[(tick * 7 + j * 13) % SCRAMBLE.length];
+        txt(ctx, s, x0, y, 9.6, 600, 'rgba(244,63,94,0.62)');
+      } else {
+        this.codeLine(ctx, CODE_B[i], x0, y, adv, st, settle, 1);
+      }
+    }
+    ctx.restore();
+  }
+
+  codeLine(ctx, line, x0, y, adv, st, settle, which) {
+    if (line.startsWith('§')) {
+      const tick = Math.floor(st.t * 14);
+      let s = line.slice(1);
+      if (tick > 0 && st.motion) s = s.split('').map((ch, j) => SCRAMBLE[(tick * 5 + j * 11) % SCRAMBLE.length]).join('');
+      txt(ctx, s, x0, y, 9.6, 600, 'rgba(244,63,94,0.62)');
+      return;
+    }
+    const dim = 1 - settle;
+    if (line.startsWith('//')) {
+      txt(ctx, line, x0, y, 9.6, 500, rgb(mix([178, 178, 186], [236, 170, 190], dim * 0.6)));
+      return;
+    }
+    const re = /('[^']*')|([A-Za-z_]\w*)|(\d+)|(\s+)|(.)/g;
+    let m;
+    let col = 0;
+    let prev = '';
+    while ((m = re.exec(line))) {
+      const tok = m[0];
+      let color = [28, 25, 23];
+      let wt = 700;
+      if (m[1]) { color = [28, 25, 23]; wt = 800; }
+      else if (m[2]) {
+        if (KEYWORDS.has(tok)) { color = [200, 92, 130]; wt = 500; }
+        else if (prev === '.') { color = [112, 92, 208]; wt = 600; }
+        else if ((tok === 'ring' || tok === 'spawn') && line[m.index + tok.length] === '(') { color = [200, 92, 130]; wt = 600; }
+      } else if (m[3]) { color = [20, 70, 50]; wt = 800; }
+      if (!m[4]) {
+        const c = mix(color, [236, 160, 186], dim * 0.75);
+        txt(ctx, tok, x0 + col * adv, y, 9.6, wt, rgb(c, 1 - dim * 0.45));
+      }
+      prev = tok;
+      col += tok.length;
+    }
+  }
+
+  panelMesh(ctx, st) {
+    const cx = 811, cy = 1144, R = 60;
+    const rot = st.t * 0.55 * (st.motion ? 1 : 0.2);
+    const tilt = 0.32;
+    const pts = [];
+    for (const p of this.sphere) {
+      const a = p.a + rot;
+      const x = Math.cos(a) * p.rr, z0 = Math.sin(a) * p.rr;
+      const y = p.y * Math.cos(tilt) - z0 * Math.sin(tilt);
+      const z = p.y * Math.sin(tilt) + z0 * Math.cos(tilt);
+      pts.push([x, y, z, p.k]);
+    }
+    pts.sort((a, b) => a[2] - b[2]);
+    // a few loading-state dots carry the agents' colours; linked, they all settle to ink
+    const palA = [[10, 10, 10], [109, 40, 217], [10, 10, 10], [10, 10, 10], [10, 10, 10], [15, 118, 110], [10, 10, 10], [154, 52, 18], [10, 10, 10]];
+    for (const [x, y, z, k] of pts) {
+      const depth = (z + 1) / 2;
+      const base = mix(palA[k], [12, 12, 12], st.s);
+      const col = mix([205, 205, 212], base, 0.45 + 0.55 * depth);
+      ctx.fillStyle = rgb(col);
+      ctx.beginPath();
+      ctx.arc(cx + x * R, cy + y * R, 1.55 + 1.55 * depth, 0, TAU);
+      ctx.fill();
+    }
+    txt(ctx, 'phase gap', 740, 1236.8, 8.6, 500, '#b4b4b9');
+    const dCol = rgb(mix([96, 28, 200], [30, 12, 90], st.s));
+    glowText(ctx, `Δ ${st.gap.toFixed(2)}`, 738.5, 1266.6, 26, 800, dCol, 'rgba(139,92,246,0.55)', 7);
+    txt(ctx, 'aligned', 740, 1287.6, 9.6, 700, rgb(mix([38, 38, 42], [60, 62, 64], st.s)));
+    const aw = 150 * clamp((0.42 - st.gap) / 0.42, 0, 1);
+    if (aw > 0.5) {
+      const g = ctx.createLinearGradient(739, 0, 739 + aw, 0);
+      g.addColorStop(0, '#4c1d95');
+      g.addColorStop(1, '#7c3aed');
+      ctx.fillStyle = g;
+      ctx.fillRect(739, 1293.4, aw, 6.4);
+    }
+    txt(ctx, 'disasm', 740, 1318.5, 8.6, 500, '#8a7f80');
+    txt(ctx, '8 waves', 782.5, 1318.5, 9.6, 800, '#7e4429');
+    txt(ctx, 'decomp', 740.5, 1336.6, 8.6, 500, '#4b6b65');
+    txt(ctx, `${st.s > 0.5 ? 8 : 6} waves`, 782.5, 1336.6, 9.6, 800, '#0c3328');
+  }
+
+  panelSync(ctx, st) {
+    txt(ctx, 'in sync', 907, 1078.5, 8.6, 500, '#b4b4b8');
+    const pctStr = `${Math.round(65.26 * st.p)}%`;
+    ctx.font = `800 26px ${MONO}`;
+    const pw = (ctx.measureText(pctStr).width || 15.6 * pctStr.length) + 8;
+    const yg = ctx.createLinearGradient(0, 1086, 0, 1114);
+    yg.addColorStop(0, 'rgba(253,230,138,0)');
+    yg.addColorStop(0.5, 'rgba(250,224,120,0.55)');
+    yg.addColorStop(1, 'rgba(253,230,138,0)');
+    ctx.fillStyle = yg;
+    ctx.fillRect(900, 1086, pw, 28);
+    glowText(ctx, pctStr, 904, 1110, 26, 800, '#0a0a0a', 'rgba(253,230,138,0.95)', 9);
+    const omega = TAU * 15 / 24;
+    const pT = 0.36 + omega * st.t;
+    const delta = lerp(-2.4, -1.24, clamp(st.q, 0, 1));
+    const waves = [[pT + delta, '#7c3a1c', 'rgba(251,146,60,0.35)'], [pT, '#0f5f58', 'rgba(45,212,191,0.4)']];
+    ctx.save();
+    ctx.lineWidth = 2.4;
+    ctx.lineJoin = 'round';
+    for (const [ph, col, glow] of waves) {
+      ctx.shadowColor = glow;
+      ctx.shadowBlur = 5;
+      ctx.strokeStyle = col;
+      ctx.beginPath();
+      for (let x = 904; x <= 1064; x += 1.5) {
+        const y = 1158 + 25 * Math.sin((TAU * x) / 49.5 + ph);
+        x === 904 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+    txt(ctx, 'crossings', 907, 1218.2, 8.6, 500, '#b4b4b8');
+    txt(ctx, fmt(1767.1 * st.p), 904, 1249.6, 26, 800, '#0a0a0a');
+    const rows = [
+      ['lifted', 1275.5, fmt(1832.4 * st.p), '#7c3f2a'],
+      ['decompiled', 1295.5, fmt(1351.2 * st.p), '#0d3a2c'],
+      ['flagged', 1315.5, fmt(262.3 * st.p), '#c58aa2'],
+    ];
+    for (const [k, y, v, c] of rows) {
+      txt(ctx, k, 907, y, 9.2, 500, '#4e4e55');
+      txt(ctx, v, 1063.8, y, 9.6, 800, c, 'right');
+    }
   }
 }

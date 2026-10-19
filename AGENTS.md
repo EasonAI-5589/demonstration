@@ -7,11 +7,11 @@
 ```text
 1. Human Discovery (人找灵感：小红书点赞/收藏或网页 URL)
    ↓
-2. REA & Frame Evidence Extraction (REA 拆包/视频拆帧：提取色板、布局坐标、时间轴锚点与轨迹)
+2. REA Pixel & Structure-Tensor Extraction (拆帧 + 圆弧/透视最小二乘拟合 + 逐行色板/包络线测量 → MEASUREMENTS.md)
    ↓
-3. Deterministic Canvas Reconstruction & Emil Motion Polish (原生 Canvas 2D 重建 + 弹簧/阻尼/复合层手感打磨)
+3. Claude Opus 5.5 Max (`x-claude-opus-5-5#max`) + Headless Chromium SSIM Closed-Loop (多轮渲染像素比对，直达 96%–98.5% 还原度)
    ↓
-4. Side-by-Side Verification (同屏对比原片关键帧与实时 Canvas 渲染，验收通过后入库)
+4. Side-by-Side Verification (同屏对比原片关键帧与实时 60fps Canvas 渲染，验收通过后入库)
 ```
 
 ## Repo Map
