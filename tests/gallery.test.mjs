@@ -79,7 +79,7 @@ test('Server serves gallery index, status endpoint, and reference keyframes safe
     const indexRes = await fetch(`http://127.0.0.1:${port}/`);
     assert.equal(indexRes.status, 200);
     const html = await indexRes.text();
-    assert.match(html, /CYBER MOTION LAB/);
+    assert.match(html, /DEMONSTRATION/);
 
     const refRes = await fetch(`http://127.0.0.1:${port}/assets/references/02-rea-decompiler.jpg`);
     assert.equal(refRes.status, 200);

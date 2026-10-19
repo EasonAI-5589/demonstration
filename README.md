@@ -1,4 +1,4 @@
-# Cyber Motion Lab · 赛博遥测与动态可视化复刻实验室
+# Demonstration · 赛博遥测与动态可视化复刻实验室
 
 一个基于 **「人找灵感 → REA 拆帧/逆向测量 → 原生 Canvas 2D 确定性重建 → Emil 动效手感打磨 → 左右同屏对比验收」** 闭环工作流的交互式可视化画廊。
 
@@ -25,8 +25,8 @@
 需要 **Node.js 20+**：
 
 ```bash
-git clone https://github.com/EasonAI-5589/cyber-motion-lab.git
-cd cyber-motion-lab
+git clone https://github.com/EasonAI-5589/demonstration.git
+cd demonstration
 npm start
 ```
 

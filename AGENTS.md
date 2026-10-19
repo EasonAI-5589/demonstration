@@ -1,8 +1,8 @@
-# Cyber Motion Lab — Agent Operating Guide
+# Demonstration — Agent Operating Guide
 
 ## What This Project Is
 
-**Cyber Motion Lab** is an interactive Canvas 2D motion-engineering gallery and reconstruction workbench. It operationalizes a 4-stage closed-loop workflow for turning viral UI/telemetry motion designs (discovered on Xiaohongshu / X / Web) into zero-dependency, 60fps interactive HTML5 Canvas 2D implementations:
+**Demonstration** is an interactive Canvas 2D motion-engineering gallery and reconstruction workbench. It operationalizes a 4-stage closed-loop workflow for turning viral UI/telemetry motion designs (discovered on Xiaohongshu / X / Web) into zero-dependency, 60fps interactive HTML5 Canvas 2D implementations:
 
 ```text
 1. Human Discovery (人找灵感：小红书点赞/收藏或网页 URL)
