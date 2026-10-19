@@ -1,0 +1,10 @@
+node_modules/
+.DS_Store
+*.mp4
+*.mov
+*.m4s
+*.webm
+*.log
+.env*
+raw-videos/
+tmp/
