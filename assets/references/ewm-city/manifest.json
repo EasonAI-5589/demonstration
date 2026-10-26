@@ -1,0 +1,45 @@
+{
+  "sourceUrl": "https://adamleopold.github.io/ewm-challenge/agentic-city.html",
+  "sourceTitle": "EWM Challenge · Track 3 · World by Agentic City",
+  "creator": "EWM Challenge · NTU GIFTS & Nanyang Business School (site by Yuhang (Adam) Lu)",
+  "width": 1280,
+  "height": 720,
+  "duration": 12,
+  "frameCount": 6,
+  "sourceSha256": "2d2ca2ff9e53905a00a64250036a914f84cd64416118ccb7edd41c77a8edb4cd",
+  "sourceFile": "https://adamleopold.github.io/ewm-challenge/assets/js/fx.js",
+  "reaEvidence": "ev_0d2e0162f95cab5005fce9072a5bda4d0d58ad48fd5e6a44d601d9d4a0be4243",
+  "timeBasis": "REA capture clock since navigation start (s)",
+  "frames": [
+    {
+      "time": 1.06,
+      "src": "/assets/references/ewm-city/frame-000.webp",
+      "captureSha256": "eaf6be0192ef829f57d5b48b602613e9a91d532aba798af0bd1232dc21dcf5c4"
+    },
+    {
+      "time": 2.38,
+      "src": "/assets/references/ewm-city/frame-001.webp",
+      "captureSha256": "9fb6eeca57712bdbe1153361f261cf65fc75246c543266c691db09890ee4ea6f"
+    },
+    {
+      "time": 3.69,
+      "src": "/assets/references/ewm-city/frame-002.webp",
+      "captureSha256": "bf130326696f05afe4d4952737d05e5d81da35e2054a70b27b96f1da733740ca"
+    },
+    {
+      "time": 4.99,
+      "src": "/assets/references/ewm-city/frame-003.webp",
+      "captureSha256": "6860c04ba4113bc6eabcb9b271e371c0370648683c5c3fe1e8c6cdcd33aab444"
+    },
+    {
+      "time": 6.3,
+      "src": "/assets/references/ewm-city/frame-004.webp",
+      "captureSha256": "f2f61d0df67dc972e16a5a2c5355436929d056b5aa29ddd2eab7ee79b34545f2"
+    },
+    {
+      "time": 7.61,
+      "src": "/assets/references/ewm-city/frame-005.webp",
+      "captureSha256": "7c30d4a9a042ed0b035acfed698a355a79b6febfac2a368c3f590d433ba276c3"
+    }
+  ]
+}

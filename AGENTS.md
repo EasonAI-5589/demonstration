@@ -3,7 +3,7 @@
 ## Current user workflow (2026-10-26)
 
 - Discover through Zhihu, WeChat public articles, or user-supplied references; user reviews candidates before implementation. Xiaohongshu skills and automation are disabled. Historical links remain provenance only.
-- The gallery now contains 12 scene families / 13 presets. Additions register in app/new-scenes.js, with original frames and manifest.json under assets/references/<scene-id>/.
+- The gallery now contains 17 scene families / 18 presets (13–17 are the EWM Challenge web visuals, ported from REA-recovered source; see notes/measurements/ewm-challenge.md). Additions register in app/new-scenes.js, with original frames and manifest.json under assets/references/<scene-id>/.
 - Use actual REA source/runtime evidence and record its IDs in notes/measurements/. GIF decoding and pixel measurement may use separate ordinary tools; identify those separately. Do not imply video pixels recovered source code or hidden state.
 - Preserve deterministic elapsed/state rendering, reverse seeking, original-frame comparison and reduced-motion support. Respect each original's aspect ratio and measured duration.
 - Treat pixel differences as pixel differences, not reconstruction percentages. No unmeasured FPS/SSIM claims. Commit and push when the user requests it; the user authorized publishing this six-scene expansion on 2026-10-26.
@@ -39,6 +39,8 @@
 | `app/scenes/stanford-torus.js` | Scene 04: `STANFORD AI LAB / DISCOVERY ARCHITECTURE` 3D torus connectome & cognitive stack |
 | `app/scenes/subs-teardown.js` | Scene 05: `SUBS → LOCAL // $300/mo → $0/mo` JEV dome filter & REA teardown console |
 | `app/scenes/jev-isometric.js` | Scene 06: `Jev: System One` warm-gold isometric mechanical schema reader |
+| `app/scenes/ewm-fx.js` | Scenes 13–16: EWM Challenge globe, HoloBit candles/surface, Agentic City, tracks triptych (ports of the site's `fx.js`) |
+| `app/scenes/ewm-stack.js` | Scene 17: EWM economic world model L1–L4 stack (port of the site's three.js `stack3d.js`, timeline = scroll progress) |
 | `assets/references/` | Compressed WebP/PNG reference keyframes (<300 KB each) for side-by-side comparison |
 | `server.mjs` | Zero-dependency Node.js HTTP server (`PORT=4318`, binds `127.0.0.1`) |
 

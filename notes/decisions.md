@@ -10,3 +10,9 @@
 - **Rejected Alternatives**:
   - Separate repositories or separate ports per scene (hard to browse and compare).
   - Bundling raw `.mp4` videos into Git (bloats repository size; we store lightweight `<250 KB` WebP keyframes in `assets/references/` and ignore `.mp4` via `.gitignore` + `pre-commit` hook).
+
+## 2026-10-26 — EWM Challenge: port recovered source instead of fitting pixels
+
+- **Decision**: For a web target whose JavaScript REA can retain, port the recovered drawing code (constants, formulas, camera keyframes, reveal curves) and use captured frames only for verification. Replace `Math.random()` state with seeded hashes or fixed-step re-simulation from t = 0, so every scene stays a pure function of elapsed time.
+- **Why**: The source is exact where pixel fitting can only estimate; determinism keeps reverse seeking and the reference comparison meaningful.
+- **Three.js scene**: map the timeline to the site's scroll progress, keep its 14 camera keyframes and reveal curves, and approximate depth with a painter's sort and GLB models with shaded boxes, rather than adding a WebGL dependency to a zero-dependency gallery.

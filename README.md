@@ -1,8 +1,22 @@
 # Demonstration · 赛博遥测与动态可视化复刻实验室
 
+## EWM Challenge 数据可视化（2026-10-26）
+
+用 REA 对 [Economic World Model Challenge](https://adamleopold.github.io/ewm-challenge/) 网页取证：恢复出 `fx.js` 与 `stack3d.js` 源码，并在受控 Chromium 中采集原始帧与滚动进度。页面上的 5 个数据可视化移植为确定性 Canvas 2D 场景，分析与像素差见 [EWM 测量记录](notes/measurements/ewm-challenge.md)。
+
+| 新编号 | ID | 场景 | 时长 | 原始实现 |
+| --- | --- | --- | --- | --- |
+| 13 | ewm-world | 世界模型地球：点阵球 + 智能体弧线 + 呼吸图标 | 12 s | `worldFX` |
+| 14 | ewm-holo | HoloBit K 线、均线与流动性曲面 | 12 s | `holoFX`（quiet） |
+| 15 | ewm-city | Agentic City 线框街区与智能体轨迹 | 12 s | `cityFX`（quiet） |
+| 16 | ewm-tracks | 赛道选择三联屏：交易终端、健康因子清算线、倒挂城市 | 12 s | `terminalFX` · `holoFX` · `cityFX` |
+| 17 | ewm-stack | 经济世界模型 L1–L4 分层与外圈字环（时间轴 = 滚动进度） | 24 s | `stack3d.js`（three.js） |
+
+打开 http://127.0.0.1:4318/?scene=ewm-stack&compare=1 ，拖动时间轴即可按原站的相机关键帧穿过 L1 → L4 → 全景。
+
 ## 本轮扩充与 review（2026-10-26）
 
-现有 **12 类场景、13 个预设**。新增场景保留原始 GIF 的画幅与时长，右侧原片关键帧随时间轴切换。来源与重建限制可在对比面板展开；完整来源表见 [微信公众号来源索引](notes/wechat-sources.md)，六份分析见 [测量记录目录](notes/measurements/)。
+现有 **17 类场景、18 个预设**。新增场景保留原始 GIF 的画幅与时长，右侧原片关键帧随时间轴切换。来源与重建限制可在对比面板展开；完整来源表见 [微信公众号来源索引](notes/wechat-sources.md)，六份分析见 [测量记录目录](notes/measurements/)。
 
 | 新编号 | ID | 场景 | 时长 |
 | --- | --- | --- | --- |

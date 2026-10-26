@@ -1,5 +1,13 @@
 # Cyber Motion Lab — Implementation Plan
 
+## 2026-10-26 — EWM Challenge web visuals
+
+- [x] User supplied https://adamleopold.github.io/ewm-challenge/ and chose to reconstruct all five data visuals as gallery scenes.
+- [x] REA: recover `fx.js` / `stack3d.js`, capture DOM, original frames (motion allowed) and scroll progress; record Evidence IDs.
+- [x] Port worldFX, holoFX (quiet + risk), terminalFX, cityFX and the three.js layer stack to deterministic Canvas 2D (scenes 13–17).
+- [x] Reference frames + manifests; full-frame pixel differences recorded in notes/measurements/ewm-challenge.md.
+- [x] Pull request requested by the user (Haohaha-11).
+
 ## 2026-10-26 — WeChat inspiration expansion
 
 - [x] User confirmed shortlist 01–06; Xiaohongshu automation disabled.
