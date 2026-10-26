@@ -1,0 +1,45 @@
+{
+  "sourceUrl": "https://adamleopold.github.io/ewm-challenge/holobit.html",
+  "sourceTitle": "EWM Challenge · Tracks 1–2 · World by HoloBit",
+  "creator": "EWM Challenge · NTU GIFTS & Nanyang Business School (site by Yuhang (Adam) Lu)",
+  "width": 1280,
+  "height": 720,
+  "duration": 12,
+  "frameCount": 6,
+  "sourceSha256": "2d2ca2ff9e53905a00a64250036a914f84cd64416118ccb7edd41c77a8edb4cd",
+  "sourceFile": "https://adamleopold.github.io/ewm-challenge/assets/js/fx.js",
+  "reaEvidence": "ev_347eeea09a2bc340fe92f7f09b0aedc13e708d154e55d4fe6b1094473d545ee3",
+  "timeBasis": "REA capture clock since navigation start (s)",
+  "frames": [
+    {
+      "time": 0.99,
+      "src": "/assets/references/ewm-holo/frame-000.webp",
+      "captureSha256": "21b1d4ea4f9491efd5d728594da6e78ec1647f3728453915bdc4db6ea6ba739e"
+    },
+    {
+      "time": 2.26,
+      "src": "/assets/references/ewm-holo/frame-001.webp",
+      "captureSha256": "11717ee54b0bd63244033fcc0e08b39eb66c016ffd008a8436cc09a99f79b4c4"
+    },
+    {
+      "time": 3.56,
+      "src": "/assets/references/ewm-holo/frame-002.webp",
+      "captureSha256": "69004d67149b422e38444c3d9f34cec7febb7fc1e824cbe112ca319591377c6b"
+    },
+    {
+      "time": 4.84,
+      "src": "/assets/references/ewm-holo/frame-003.webp",
+      "captureSha256": "645b2e4faa01593b18d1ab27836a4a09fbe4c3cf7b86e86e3fb4cc5e824efb86"
+    },
+    {
+      "time": 6.11,
+      "src": "/assets/references/ewm-holo/frame-004.webp",
+      "captureSha256": "822d0f0e88563032c92056ea121714f57ae160ff956b437fd07db16538775ff4"
+    },
+    {
+      "time": 7.41,
+      "src": "/assets/references/ewm-holo/frame-005.webp",
+      "captureSha256": "f63648bf6da667a9f7cb0351edfcda53037159993decc0fc06104afd3f73d1a1"
+    }
+  ]
+}

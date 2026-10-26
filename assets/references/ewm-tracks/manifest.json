@@ -1,0 +1,45 @@
+{
+  "sourceUrl": "https://adamleopold.github.io/ewm-challenge/tracks.html",
+  "sourceTitle": "EWM Challenge · Choose your track",
+  "creator": "EWM Challenge · NTU GIFTS & Nanyang Business School (site by Yuhang (Adam) Lu)",
+  "width": 1280,
+  "height": 720,
+  "duration": 12,
+  "frameCount": 6,
+  "sourceSha256": "2d2ca2ff9e53905a00a64250036a914f84cd64416118ccb7edd41c77a8edb4cd",
+  "sourceFile": "https://adamleopold.github.io/ewm-challenge/assets/js/fx.js",
+  "reaEvidence": "ev_c75a10f7dd71ae4969802af526f43582ac88b66d65717d7db17252ac4949fb00",
+  "timeBasis": "REA capture clock since navigation start (s)",
+  "frames": [
+    {
+      "time": 0.95,
+      "src": "/assets/references/ewm-tracks/frame-000.webp",
+      "captureSha256": "ea5a07b4be5f7f50f814574e02b2930f737014efbe781d37db845ca2e648ee6e"
+    },
+    {
+      "time": 2.27,
+      "src": "/assets/references/ewm-tracks/frame-001.webp",
+      "captureSha256": "bee378c5d8c358f5277fac0d2b00d82e5bae7d5b1a6f66c23d860f61f7e1869a"
+    },
+    {
+      "time": 3.59,
+      "src": "/assets/references/ewm-tracks/frame-002.webp",
+      "captureSha256": "2dbfd80073d87e11d84b4fefa52f6bccbf5bace4b36ee47a358252e4720e0e37"
+    },
+    {
+      "time": 4.91,
+      "src": "/assets/references/ewm-tracks/frame-003.webp",
+      "captureSha256": "f8e74385c0a890082c30a15bfb3461e5b36c659dc822d70e492e02339a446ced"
+    },
+    {
+      "time": 6.23,
+      "src": "/assets/references/ewm-tracks/frame-004.webp",
+      "captureSha256": "89a04187fc3581af5686883422b189c1e1c60172aebb1cc4bb4cb849da476242"
+    },
+    {
+      "time": 7.56,
+      "src": "/assets/references/ewm-tracks/frame-005.webp",
+      "captureSha256": "9aa57181e5bf1a4ff73db38cd41e6e1f0cc06f3b7917c5317ba282f94e8cb420"
+    }
+  ]
+}

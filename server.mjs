@@ -48,7 +48,7 @@ export async function serveStatic(req, res, { root = projectRoot } = {}) {
 
   if (pathname === '/status') {
     res.setHeader('Content-Type', types['.json']);
-    res.end(JSON.stringify({ application: 'demonstration', scenes: 12, presets: 13 }));
+    res.end(JSON.stringify({ application: 'demonstration', scenes: 17, presets: 18 }));
     return;
   }
 

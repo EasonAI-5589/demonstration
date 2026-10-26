@@ -215,7 +215,7 @@ function syncSceneUI() {
   referenceKey = ''; referenceRequest++;
   $('#refImage').src = s.refImg;
   $('#refSourceLink').href = s.sourceUrl || s.xhsUrl;
-  $('#refSourceLink').textContent = s.sourceUrl ? '打开公众号原文 ↗' : '打开原始来源 ↗';
+  $('#refSourceLink').textContent = !s.sourceUrl ? '打开原始来源 ↗' : s.sourceUrl.startsWith('https://mp.weixin.qq.com/') ? '打开公众号原文 ↗' : '打开原网页 ↗';
   $('#timeline').max = String(s.duration);
   $('#frameStatus').textContent = s.id;
 

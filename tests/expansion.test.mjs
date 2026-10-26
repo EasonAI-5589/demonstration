@@ -22,14 +22,14 @@ function recordingContext(width, height) {
   return { ctx, calls };
 }
 
-test('Six additions expose attributed original frames and registered navigation', () => {
-  assert.equal(Object.keys(NEW_SCENES).length, 6);
+test('Additions expose attributed original frames and registered navigation', () => {
+  assert.equal(Object.keys(NEW_SCENES).length, 11);
   const html = fs.readFileSync(path.join(projectRoot, 'app/index.html'), 'utf8');
   for (const [id, config] of Object.entries(NEW_SCENES)) {
     assert.match(html, new RegExp(`data-scene="${id}"`));
     assert.ok(config.width > 0 && config.height > 0 && config.duration > 0);
     const manifest = JSON.parse(fs.readFileSync(path.join(projectRoot, config.refManifest), 'utf8'));
-    assert.ok(manifest.sourceUrl.startsWith('https://mp.weixin.qq.com/'));
+    assert.ok(manifest.sourceUrl.startsWith(id.startsWith('ewm-') ? 'https://adamleopold.github.io/ewm-challenge/' : 'https://mp.weixin.qq.com/'));
     assert.ok(manifest.frames.length >= 2);
     let previous = -1;
     for (const frame of manifest.frames) {

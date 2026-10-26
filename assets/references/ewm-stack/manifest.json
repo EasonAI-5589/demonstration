@@ -1,0 +1,45 @@
+{
+  "sourceUrl": "https://adamleopold.github.io/ewm-challenge/",
+  "sourceTitle": "EWM Challenge · The model (pinned WebGL scene)",
+  "creator": "EWM Challenge · NTU GIFTS & Nanyang Business School (site by Yuhang (Adam) Lu)",
+  "width": 1280,
+  "height": 720,
+  "duration": 24,
+  "frameCount": 5,
+  "sourceSha256": "98b8f6e76d817b2d1c81d9142c58e08b1fd6901ac84f7a0206ed5b3122e8e36c",
+  "sourceFile": "https://adamleopold.github.io/ewm-challenge/assets/js/stack3d.js",
+  "reaEvidence": "ev_9ebdc91b47de98904b980942f036900f59c24636ee433333e26ae26895f4ace2",
+  "timeBasis": "scroll progress × duration",
+  "frames": [
+    {
+      "time": 0.79,
+      "src": "/assets/references/ewm-stack/frame-000.webp",
+      "captureSha256": "09d12bb9df95078547d4b4404585b46f86c54f0d763a4cbbcb4f17e5dc1eea8c",
+      "scrollProgress": 0.0331
+    },
+    {
+      "time": 6.19,
+      "src": "/assets/references/ewm-stack/frame-001.webp",
+      "captureSha256": "9af0b2c3a5b8041ade43e3977eaea29706bbaa7fe00346fcca159fa9aec17d68",
+      "scrollProgress": 0.258
+    },
+    {
+      "time": 11.59,
+      "src": "/assets/references/ewm-stack/frame-002.webp",
+      "captureSha256": "7d70c079bb88b86b7ccd2fbe62bb497b44ec5240004475e2c2e8f7870e38f0c9",
+      "scrollProgress": 0.4828
+    },
+    {
+      "time": 16.98,
+      "src": "/assets/references/ewm-stack/frame-003.webp",
+      "captureSha256": "84735dfc998acc211b1e79e964f552f205e20ca20b00d1c3459a68e6a022b564",
+      "scrollProgress": 0.7077
+    },
+    {
+      "time": 22.38,
+      "src": "/assets/references/ewm-stack/frame-004.webp",
+      "captureSha256": "bda915f1dbb1142be8bd216c2dc897a5d7deda0f97b4668e3957d3d817f9f41b",
+      "scrollProgress": 0.9326
+    }
+  ]
+}

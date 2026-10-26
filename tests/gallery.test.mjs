@@ -74,8 +74,8 @@ test('Server serves gallery index, status endpoint, and reference keyframes safe
     const statusRes = await fetch(`http://127.0.0.1:${port}/status`);
     assert.equal(statusRes.status, 200);
     const status = await statusRes.json();
-    assert.equal(status.scenes, 12);
-    assert.equal(status.presets, 13);
+    assert.equal(status.scenes, 17);
+    assert.equal(status.presets, 18);
 
     const indexRes = await fetch(`http://127.0.0.1:${port}/`);
     assert.equal(indexRes.status, 200);

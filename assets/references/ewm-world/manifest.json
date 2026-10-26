@@ -1,0 +1,50 @@
+{
+  "sourceUrl": "https://adamleopold.github.io/ewm-challenge/",
+  "sourceTitle": "EWM Challenge · Test your agent in a world that pushes back.",
+  "creator": "EWM Challenge · NTU GIFTS & Nanyang Business School (site by Yuhang (Adam) Lu)",
+  "width": 1280,
+  "height": 720,
+  "duration": 12,
+  "frameCount": 7,
+  "sourceSha256": "2d2ca2ff9e53905a00a64250036a914f84cd64416118ccb7edd41c77a8edb4cd",
+  "sourceFile": "https://adamleopold.github.io/ewm-challenge/assets/js/fx.js",
+  "reaEvidence": "ev_3e59f4a8f18411a272ca7a7a534720dd754d463e23e22e59963513793d98be73",
+  "timeBasis": "REA capture clock since navigation start (s)",
+  "frames": [
+    {
+      "time": 1.06,
+      "src": "/assets/references/ewm-world/frame-000.webp",
+      "captureSha256": "fc579249043a83ee05ed6d73f4c46cea74f3df010cdd0a4da4adef96f376c675"
+    },
+    {
+      "time": 2.38,
+      "src": "/assets/references/ewm-world/frame-001.webp",
+      "captureSha256": "009d236a8d2beffc40cd39875a5e8e71b1b75ae4b77d5554a41575441a75c136"
+    },
+    {
+      "time": 3.7,
+      "src": "/assets/references/ewm-world/frame-002.webp",
+      "captureSha256": "37990c3b31a84d71cc644cb6795507d042e3792f80bdd9b2bd09c0b87d867c93"
+    },
+    {
+      "time": 5.02,
+      "src": "/assets/references/ewm-world/frame-003.webp",
+      "captureSha256": "867b1790cb160f0f3adeaccc07065e02b473e603f4fdbbaf284d9873e53e0f40"
+    },
+    {
+      "time": 6.34,
+      "src": "/assets/references/ewm-world/frame-004.webp",
+      "captureSha256": "1816694bba509dc3224a3bca0aaf189ba5e0a0ba457381349fc56876d69a332d"
+    },
+    {
+      "time": 7.66,
+      "src": "/assets/references/ewm-world/frame-005.webp",
+      "captureSha256": "dd166588e03943db6b4cff75b51a649fe46d95b0a2eb4004cae709f0b308f5cf"
+    },
+    {
+      "time": 9.0,
+      "src": "/assets/references/ewm-world/frame-006.webp",
+      "captureSha256": "be0c7d534993a19d4ced3cb130659db5f15d3ef4e04f39fde0daea150a9b06db"
+    }
+  ]
+}
