@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.mjs",
-    "test": "node --test tests/gallery.test.mjs",
+    "test": "node --test tests/gallery.test.mjs tests/expansion.test.mjs",
     "extract": "node workflow/extract-evidence.mjs"
   },
   "engines": {

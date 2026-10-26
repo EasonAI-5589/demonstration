@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#090a0d">
-  <title>Demonstration · 6 大动态可视化复刻画廊 (Human → REA → Canvas)</title>
+  <title>Demonstration · 12 场景动态复刻画廊</title>
   <link rel="icon" type="image/svg+xml" href="/spider/favicon.svg">
   <link rel="stylesheet" href="/style.css">
 </head>
@@ -13,8 +13,8 @@
     <div class="brand">
       <img src="/spider/favicon.svg" width="24" height="24" alt="" aria-hidden="true">
       <div>
-        <div class="brand-title">DEMONSTRATION <span>6 SCENES · REA RECONSTRUCTION</span></div>
-        <div class="brand-sub">人找灵感 (XHS) → REA 拆帧测量 → 原生 Canvas 2D 重建 → Emil 动效打磨 → 同屏对比</div>
+        <div class="brand-title">DEMONSTRATION <span>12 SCENES · 13 PRESETS</span></div>
+        <div class="brand-sub">知乎 / 公众号找灵感 → 人工 review → REA 分析 → Canvas 重建 → 原片对比</div>
       </div>
     </div>
     <nav class="scene-nav" aria-label="切换可视化场景">
@@ -25,6 +25,12 @@
       <button type="button" class="scene-btn" data-scene="stanford-torus">04 · Stanford 圆环连接组</button>
       <button type="button" class="scene-btn" data-scene="subs-teardown">05 · 订阅拆解紫穹顶</button>
       <button type="button" class="scene-btn" data-scene="jev-isometric">06 · Jev 等轴测判读仪</button>
+      <button type="button" class="scene-btn" data-scene="bauhaus-primary">07 · 包豪斯机械构成</button>
+      <button type="button" class="scene-btn" data-scene="mirror-array">08 · 翻转镜阵</button>
+      <button type="button" class="scene-btn" data-scene="grid-rhythm">09 · 波浪网格</button>
+      <button type="button" class="scene-btn" data-scene="digital-organism">10 · 数字有机体</button>
+      <button type="button" class="scene-btn" data-scene="poseidon-fountain">11 · 音乐粒子喷泉</button>
+      <button type="button" class="scene-btn" data-scene="progressive-diagram">12 · 图表逐笔生成</button>
     </nav>
     <div class="top-actions">
       <button type="button" id="compareBtn" class="action-btn" aria-pressed="false" title="同屏对比原片关键帧（快捷键 C）">原片对比 (C)</button>
@@ -47,16 +53,17 @@
 
       <aside class="reference-pane" id="referencePane" hidden>
         <div class="pane-header">
-          <span><i class="code-dot"></i> 原片参考帧 &amp; REA 测量证据链</span>
-          <a id="refXhsLink" href="https://www.xiaohongshu.com/explore/6acde7bd000000001203a044" target="_blank" rel="noreferrer" class="xhs-link">打开小红书原帖 ↗</a>
+          <span><i class="code-dot"></i> 原片参考 &amp; 测量记录</span>
+          <a id="refSourceLink" href="https://www.xiaohongshu.com/explore/6acde7bd000000001203a044" target="_blank" rel="noreferrer" class="source-link">打开原始来源 ↗</a>
         </div>
         <div class="ref-image-wrap">
-          <img id="refImage" src="/assets/references/01-prompt-spider.jpg" alt="小红书原片参考帧">
+          <img id="refImage" src="/assets/references/01-prompt-spider.jpg" alt="原始来源参考帧">
         </div>
-        <div class="evidence-card">
-          <div class="evidence-title">4-STAGE RECONSTRUCTION EVIDENCE</div>
+        <div id="referenceTime" class="reference-time" aria-live="off">原片静态参考帧</div>
+        <details class="evidence-card">
+          <summary class="evidence-title">来源与复现说明</summary>
           <dl id="evidenceList" class="evidence-dl"></dl>
-        </div>
+        </details>
       </aside>
     </section>
 
@@ -83,15 +90,15 @@
 
   <dialog id="workflowDialog" class="workflow-modal">
     <div class="modal-header">
-      <h2>「人找 → REA 抄 → 原生复刻 → 同屏看效果」标准工作流</h2>
+      <h2>「找灵感 → review → REA 分析 → 复现验收」</h2>
       <button type="button" id="closeWorkflowBtn">关闭</button>
     </div>
     <div class="modal-body">
       <ol class="workflow-steps">
-        <li><strong>1. 人来找（Human Discovery · <code>$xiaohongshu-local</code>）</strong>：在小红书刷到惊艳的科研/遥测/动效帖子后直接点个赞，Agent 在内置真实浏览器里进入「我 → 点赞」原位点开读取文案、评论与原视频流。</li>
-        <li><strong>2. REA 来抄（Evidence Extraction · <code>$reverse-engineer-anything</code>）</strong>：运行 <code>node workflow/extract-evidence.mjs --video &lt;mp4&gt; --id &lt;scene-id&gt;</code>（或对网页跑 <code>rea analyze-web-bundle &lt;url&gt;</code>），提取关键帧、主色板 Hex、布局网格与时间轴状态跳变点。</li>
-        <li><strong>3. 确定性复现（Canvas Reconstruction · <code>$animate</code> + <code>$emil-design-eng</code>）</strong>：在 <code>app/scenes/&lt;scene-id&gt;.js</code> 用纯原生 ES Module + HTML5 Canvas 2D 重建视觉与物理轨迹，所有动画写成时间 <code>t</code> 的纯函数，支持时间轴任意拖拽回看。</li>
-        <li><strong>4. 同屏看效果（Side-by-Side Verification）</strong>：点击右上角「<strong>原片对比 (C)</strong>」，左边跑 60fps 实时 Canvas 交互，右边对照原片关键帧与测量参数，验收通过后一键推上 GitHub。</li>
+        <li><strong>1. 找灵感与选题</strong>：从知乎、微信公众号及用户给定的参考中整理候选，由用户 review 选定。本轮停用小红书自动化。</li>
+        <li><strong>2. REA 分析与测量</strong>：读取可得源码或回放原始参考帧，记录尺寸、色板和时序，区分实测数据与观察推断。</li>
+        <li><strong>3. Canvas 复现</strong>：按时间和交互状态生成画面，支持暂停、调速、倒序拖动以及减弱动态效果偏好。</li>
+        <li><strong>4. 同屏 review</strong>：打开「原片对比」，右侧原始关键帧随时间轴切换。来源与重建边界可展开查看，用户确认后再决定后续发布。</li>
       </ol>
     </div>
   </dialog>

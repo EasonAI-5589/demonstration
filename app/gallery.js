@@ -5,10 +5,12 @@ import { KesslerOrbitalScene } from './scenes/kessler-orbital.js';
 import { StanfordTorusScene } from './scenes/stanford-torus.js';
 import { SubsTeardownScene } from './scenes/subs-teardown.js';
 import { JevIsometricScene } from './scenes/jev-isometric.js';
+import { NEW_SCENES, nearestReferenceFrame } from './new-scenes.js';
 
 const $ = sel => document.querySelector(sel);
 const canvas = $('#scene');
-const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
+let reducedMotion = motionPreference.matches;
 
 const [studioPrompt, inetPrompt] = await Promise.all([
   fetch('/spider/prompt.txt').then(r => r.text()),
@@ -126,7 +128,16 @@ const SCENES = {
       ['三阶段叙事', '每 6 秒自动切换 Fig 1 (置信门定义) → Fig 2 (退款工单 0.93 直通) → Fig 3 (0.68 边界转大模型)'],
     ],
   },
+  ...NEW_SCENES,
 };
+
+await Promise.all(Object.values(NEW_SCENES).map(async scene => {
+  const response = await fetch(scene.refManifest);
+  if (!response.ok) throw new Error(`Reference manifest unavailable: ${scene.id}`);
+  scene.reference = await response.json();
+  scene.sourceUrl = scene.reference.sourceUrl;
+  scene.refImg = scene.reference.frames[0].src;
+}));
 
 const spiderRuns = {
   'spider-inet': referenceRun(inetPrompt, { preset: 'inferencenet' }),
@@ -136,14 +147,52 @@ const spiderRuns = {
 const params = new URLSearchParams(location.search);
 let currentSceneId = SCENES[params.get('scene')] ? params.get('scene') : 'spider-inet';
 let compareOpen = params.get('compare') === '1';
-let elapsed = 0;
-let playing = !reducedMotion;
+let elapsed = Math.max(0, Math.min(SCENES[currentSceneId].duration, Number(params.get('t')) || 0));
+let playing = !reducedMotion && params.get('paused') !== '1';
 let speed = 1;
 let selectedTokenIndex = null;
 let lastFrame = null;
+let pointer = null;
+let referenceRequest = 0;
+let referenceKey = '';
+const referenceImages = new Map();
 
 function activeScene() {
   return SCENES[currentSceneId];
+}
+
+function fitCanvas(scene) {
+  const width = scene.width || 1080, height = scene.height || 1350;
+  const dpr = Math.min(2, Math.max(1, devicePixelRatio || 1));
+  if (canvas.width !== Math.round(width * dpr) || canvas.height !== Math.round(height * dpr)) {
+    canvas.width = Math.round(width * dpr); canvas.height = Math.round(height * dpr);
+  }
+  const available = Math.max(220, innerHeight - $('.topbar').offsetHeight - $('.transport-bar').offsetHeight - 100);
+  canvas.style.width = `${Math.max(1, Math.min($('.canvas-wrap').clientWidth, available * width / height))}px`;
+  canvas.style.aspectRatio = `${width} / ${height}`;
+  $('#refImage').style.maxHeight = `${available}px`;
+  return dpr;
+}
+
+function syncReference() {
+  if (!compareOpen) return;
+  const scene = activeScene();
+  const frame = nearestReferenceFrame(scene.reference?.frames, elapsed);
+  const src = frame?.src || scene.refImg;
+  $('#referenceTime').textContent = frame ? `原片关键帧 ${Number(frame.time).toFixed(2)} s · 随时间轴切换` : '原片静态参考帧';
+  if (referenceKey === src) return;
+  referenceKey = src;
+  const request = ++referenceRequest;
+  // Keep frame blobs between loops despite the static server's no-store policy.
+  if (!referenceImages.has(src)) referenceImages.set(src, fetch(src).then(r => {
+    if (!r.ok) throw new Error('Reference image unavailable');
+    return r.blob();
+  }).then(blob => URL.createObjectURL(blob)));
+  referenceImages.get(src).then(url => {
+    if (request === referenceRequest && compareOpen) $('#refImage').src = url;
+  }).catch(() => {
+    if (request === referenceRequest) $('#referenceTime').textContent = '参考帧暂时不可用';
+  });
 }
 
 function syncCompareUI() {
@@ -151,6 +200,7 @@ function syncCompareUI() {
   $('#referencePane').hidden = !compareOpen;
   $('#compareBtn').classList.toggle('active', compareOpen);
   $('#compareBtn').setAttribute('aria-pressed', String(compareOpen));
+  render();
 }
 
 function syncSceneUI() {
@@ -162,8 +212,10 @@ function syncSceneUI() {
   });
   $('#sceneHeading').innerHTML = `<i class="pink-dot"></i> ${s.heading}`;
   $('#sceneBadge').textContent = s.badge;
+  referenceKey = ''; referenceRequest++;
   $('#refImage').src = s.refImg;
-  $('#refXhsLink').href = s.xhsUrl;
+  $('#refSourceLink').href = s.sourceUrl || s.xhsUrl;
+  $('#refSourceLink').textContent = s.sourceUrl ? '打开公众号原文 ↗' : '打开原始来源 ↗';
   $('#timeline').max = String(s.duration);
   $('#frameStatus').textContent = s.id;
 
@@ -180,6 +232,7 @@ function syncSceneUI() {
 
 function render() {
   const s = activeScene();
+  const dpr = fitCanvas(s);
   if (currentSceneId === 'spider-inet' || currentSceneId === 'spider-studio') {
     const preset = currentSceneId === 'spider-inet' ? 'inferencenet' : 'studio';
     const run = spiderRuns[currentSceneId];
@@ -193,22 +246,29 @@ function render() {
     });
     spiderRenderer.render(st);
   } else {
-    spiderRenderer.resize();
     const ctx = canvas.getContext('2d');
     ctx.save();
-    ctx.setTransform(spiderRenderer.dpr, 0, 0, spiderRenderer.dpr, 0, 0);
-    s.instance.render(ctx, { elapsed, duration: s.duration, reducedMotion, playing });
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, s.width || 1080, s.height || 1350);
+    s.instance.render(ctx, { elapsed, duration: s.duration, reducedMotion, playing, pointer });
     ctx.restore();
   }
 
   $('#timeline').value = String(elapsed);
   $('#timeText').textContent = `${elapsed.toFixed(2).padStart(5, '0')} / ${s.duration.toFixed(2)}`;
   $('#playBtn').textContent = playing ? '暂停' : '播放';
+  syncReference();
 }
 
 function selectScene(sceneId, { resetTime = true } = {}) {
   if (!SCENES[sceneId]) return;
   currentSceneId = sceneId;
+  pointer = null;
+  const url = new URL(location.href);
+  url.searchParams.set('scene', sceneId);
+  url.searchParams.delete('t');
+  url.searchParams.delete('paused');
+  history.replaceState(null, '', url);
   selectedTokenIndex = null;
   if (resetTime) elapsed = 0;
   syncSceneUI();
@@ -240,7 +300,7 @@ function tick(now) {
 
 document.querySelectorAll('.scene-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    playing = true;
+    playing = !reducedMotion;
     selectScene(btn.dataset.scene);
   });
 });
@@ -277,6 +337,7 @@ $('#closeWorkflowBtn').addEventListener('click', () => $('#workflowDialog').clos
 
 $('#fullscreenBtn').addEventListener('click', () => {
   document.body.classList.toggle('immersive');
+  render();
 });
 
 document.addEventListener('keydown', e => {
@@ -300,6 +361,19 @@ document.addEventListener('keydown', e => {
 });
 
 window.addEventListener('resize', render);
+motionPreference.addEventListener('change', e => {
+  reducedMotion = e.matches;
+  if (reducedMotion) playing = false;
+  render();
+});
+canvas.addEventListener('pointermove', e => {
+  const rect = canvas.getBoundingClientRect(), scene = activeScene();
+  pointer = { x: (e.clientX - rect.left) / rect.width * (scene.width || 1080),
+    y: (e.clientY - rect.top) / rect.height * (scene.height || 1350),
+    nx: (e.clientX - rect.left) / rect.width, ny: (e.clientY - rect.top) / rect.height, active: true };
+  if (!playing) render();
+});
+canvas.addEventListener('pointerleave', () => { pointer = null; if (!playing) render(); });
 
 window.cyberLab = {
   selectScene,

@@ -1,12 +1,31 @@
 # Demonstration · 赛博遥测与动态可视化复刻实验室
 
+## 本轮扩充与 review（2026-10-26）
+
+现有 **12 类场景、13 个预设**。新增场景保留原始 GIF 的画幅与时长，右侧原片关键帧随时间轴切换。来源与重建限制可在对比面板展开；完整来源表见 [微信公众号来源索引](notes/wechat-sources.md)，六份分析见 [测量记录目录](notes/measurements/)。
+
+| 新编号 | ID | 场景 | 时长 |
+| --- | --- | --- | --- |
+| 07 | bauhaus-primary | 包豪斯三原色机械构成 | 2.25 s |
+| 08 | mirror-array | 翻转镜阵 | 5.61 s |
+| 09 | grid-rhythm | 波浪网格 | 1.24 s |
+| 10 | digital-organism | 数字有机体 | 3.60 s |
+| 11 | poseidon-fountain | 音乐粒子喷泉 | 2.00 s |
+| 12 | progressive-diagram | 图表逐笔生成 / LLM 训练过程 | 6.90 s |
+
+`npm start` 后打开 http://127.0.0.1:4318/?scene=bauhaus-primary&compare=1 。无需 npm install 或构建。`npm test` 检查渲染、倒序回放、有限数值、参考素材和服务器。
+
+当前工作流为：**知乎 / 微信公众号找灵感 → 用户 review → REA 分析 → Canvas 复现 → 原片对比**。小红书自动化停用，以下旧场景来源仅保留历史记录。新增原始帧及来源在 assets/references/<id>/manifest.json，测量和推断边界在 notes/measurements/。摄影、字体、噪声种子、反射与原始音频存在重建限制，不将像素差比例当作还原度。
+
+`workflow/measure-bauhaus.py <原始GIF路径>` 是可选离线测量工具（Pillow / NumPy / OpenCV）；前端不依赖 Python。原始 GIF / 视频及完整 REA Evidence 保留在仓库外，Git 仅保存压缩参考帧、测量表和矢量实现。旧 extract-evidence.mjs 的图片审计仍使用 macOS sips。
+
 一个基于 **「人找灵感 → REA 拆帧/逆向测量 → 原生 Canvas 2D 确定性重建 → Emil 动效手感打磨 → 左右同屏对比验收」** 闭环工作流的交互式可视化画廊。
 
 **零前端框架依赖（Pure ES Modules + HTML5 Canvas 2D）**，支持时间轴任意拖拽回放、速度调节（0.5×–4×）、全屏沉浸模式，以及一键开启 **「左：复刻交互 Canvas · 右：原片参考关键帧」** 同屏对比验收。
 
 ---
 
-## 已收录的 6 大交互式可视化场景（7 种预设）
+## 原有的 6 类交互式可视化场景（7 种预设）
 
 | 编号 | 场景 ID | 标题与视觉风格 | 核心动效与交互亮点 |
 | --- | --- | --- | --- |
@@ -31,17 +50,17 @@ npm start
 ```
 
 浏览器打开 **http://127.0.0.1:4318** ：
-- 顶部导航栏一键切换 **01–06 全部场景**；
-- 点击右上角 **「原片对比」** 按钮可同屏展开小红书原帖关键帧与复刻参数对比；
-- 快捷键：`Space` 播放/暂停，`R` 重播，`C` 切换原片对比，`F` 全屏沉浸，`←` / `→` 逐帧微调时间轴。
+- 顶部导航栏一键切换 **01–12 全部场景**（蜘蛛有两个预设）；
+- 点击右上角 **「原片对比」** 按钮可展开原始来源关键帧与复刻说明，新增场景的参考帧随时间轴切换；
+- 快捷键：`Space` 播放/暂停，`R` 重播，`C` 切换原片对比，`F` 全屏沉浸，`←` / `→` 移动时间轴 0.5 秒。
 
 ---
 
 ## 内置复刻工作流（Human → REA → Canvas → Emil Polish）
 
-详见 [`AGENTS.md`](AGENTS.md) 与 [`notes/xhs-sources.md`](notes/xhs-sources.md)：
+详见 [`AGENTS.md`](AGENTS.md)、[来源索引](notes/wechat-sources.md) 与 [分析记录](notes/measurements/)。[`notes/xhs-sources.md`](notes/xhs-sources.md) 保留旧场景的历史来源，不再作为自动化入口。
 
-1. **人找灵感（Human Discovery）**：在小红书点赞/收藏目标动效笔记，通过 `$xiaohongshu-local` 安全提取笔记元数据与参考帧；
-2. **证据提取（`workflow/extract-evidence.mjs` + `$reverse-engineer-anything`）**：自动抽帧、提取主色板（Hex Palette）、测量面板网格坐标与时间轴状态跳变点；
-3. **确定性重建与动效打磨（`$animate` + `$emil-design-eng`）**：在 `app/scenes/` 下编写纯函数式 Canvas 2D 渲染器，确保任意时间点 $t$ 可逆拖拽；
-4. **同屏验收（Side-by-Side Verification）**：开启画廊内置的「原片对比」抽屉，核对布局、色板、数值演进与帧率预算。
+1. **找灵感与 review**：从知乎、微信公众号或用户提供的参考中整理候选，由用户选定要复现的动效；小红书自动化停用。
+2. **分析原始证据**：使用 `$reverse-engineer-anything` 对可得源码或原始帧回放取证；GIF 解码、几何测量与观察推断分别记录，不将视频画面称为恢复的源代码。
+3. **确定性重建**：在 `app/scenes/` 编写 Canvas 2D 场景，在 `app/new-scenes.js` 注册，保留按时间/state 回放、倒序拖动与减弱动态效果支持。
+4. **同屏验收**：核对多个时刻的布局、色板与运动，并保留真实参考帧和测量限制。像素差不等同于感知还原度；提交、推送或发布按用户授权执行。

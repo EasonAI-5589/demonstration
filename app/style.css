@@ -161,12 +161,12 @@ button.primary {
   border: 1px solid var(--border);
   color: var(--muted);
 }
-.xhs-link {
+.source-link {
   color: var(--pink);
   text-decoration: none;
   font-size: 10.5px;
 }
-.xhs-link:hover { text-decoration: underline; }
+.source-link:hover { text-decoration: underline; }
 
 .canvas-wrap {
   display: flex;
@@ -176,7 +176,7 @@ button.primary {
 }
 #scene {
   width: min(100%, calc((100dvh - 178px) * 1080 / 1350));
-  max-height: calc(100dvh - 178px);
+  max-height: none;
   aspect-ratio: 1080 / 1350;
   height: auto;
   display: block;
@@ -281,4 +281,38 @@ body.immersive .topbar { display: none; }
 body.immersive #scene {
   width: min(100%, calc((100dvh - 88px) * 1080 / 1350));
   max-height: calc(100dvh - 88px);
+}
+
+/* Mixed portrait/landscape originals share the same responsive comparison shell. */
+.topbar { gap: 8px 16px; }
+.brand { min-width: 0; flex: 1; }
+.scene-nav { order: 3; width: 100%; min-width: 0; }
+.scene-btn { padding: 5px 8px; font-size: 10.5px; }
+.stage-grid, .canvas-pane, .reference-pane, .canvas-wrap { min-width: 0; }
+.stage-grid.compare-open { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.pane-header { min-height: 26px; gap: 10px; overflow-wrap: anywhere; }
+.meta-badge { flex-shrink: 0; font-size: 9px; }
+.canvas-wrap { min-height: 180px; }
+#scene { height: auto; max-width: 100%; }
+.ref-image-wrap { margin-bottom: 5px; min-height: 180px; align-items: center; }
+#refImage { width: 100%; height: auto; max-width: 100%; object-fit: contain; }
+.reference-time { color: var(--muted); padding: 3px 0 8px; font-size: 10px; }
+.evidence-card { padding: 7px 10px; }
+.evidence-title { cursor: pointer; margin: 0; }
+.evidence-card[open] .evidence-title { margin-bottom: 8px; }
+.transport-bar { position: sticky; bottom: 8px; z-index: 2; }
+.transport-controls, .transport-right { flex-wrap: wrap; }
+@media (max-width: 900px) {
+  .topbar { padding: 8px 10px; }
+  .lab-main { padding: 8px 10px; }
+  .brand-title span { display: none; }
+  .transport-bar { grid-template-columns: auto 1fr; gap: 8px; }
+  .transport-right { grid-column: 1 / -1; }
+  .pane-header { align-items: start; flex-wrap: wrap; }
+}
+@media (max-width: 600px) {
+  .stage-grid.compare-open { grid-template-columns: minmax(0, 1fr); }
+  .brand { flex: 1 0 100%; }
+  .brand-sub { max-width: none; }
+  .top-actions { flex-wrap: wrap; width: 100%; }
 }

@@ -1,5 +1,15 @@
 # Cyber Motion Lab — Implementation Plan
 
+## 2026-10-26 — WeChat inspiration expansion
+
+- [x] User confirmed shortlist 01–06; Xiaohongshu automation disabled.
+- [x] Decode attributed originals and retain REA evidence with measured/inferred boundaries.
+- [x] Add Bauhaus, mirror array, grid rhythm, digital organism, Poseidon fountain and streaming diagram.
+- [x] Preserve original aspect ratios/durations and synchronize original reference frames to the timeline.
+- [x] Verify deterministic reverse seeking, source assets, legacy switching and six browser previews.
+- [x] Local review page and screenshots delivered. Subsequent commit/push authorization is recorded below; no claim of photographic or perceptual equivalence.
+- [x] User requested committing and pushing all six additions, source attribution, REA analysis notes and README on 2026-10-26. Git history is the publication record.
+
 - [x] **Phase 1: Repository Scaffolding (`new-repo-scaffold`)**
   - [x] `AGENTS.md`, `CLAUDE.md`, `README.md`, `.gitignore`, `notes/`
   - [x] Pre-commit hook blocking `.mp4` binaries (>2 MB) and credentials

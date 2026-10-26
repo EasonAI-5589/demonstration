@@ -9,6 +9,7 @@ import { KesslerOrbitalScene } from '../app/scenes/kessler-orbital.js';
 import { StanfordTorusScene } from '../app/scenes/stanford-torus.js';
 import { SubsTeardownScene } from '../app/scenes/subs-teardown.js';
 import { JevIsometricScene } from '../app/scenes/jev-isometric.js';
+import { NEW_SCENES, nearestReferenceFrame } from '../app/new-scenes.js';
 
 function createMockCtx() {
   return new Proxy(
@@ -39,7 +40,7 @@ function createMockCtx() {
   );
 }
 
-test('All 6 scenes render deterministically across timeline timestamps without throwing', () => {
+test('Legacy scene renderers do not throw across timeline timestamps', () => {
   const inetText = fs.readFileSync(path.join(projectRoot, 'app/spider/inferencenet-prompt.txt'), 'utf8');
   const run = referenceRun(inetText, { preset: 'inferencenet' });
   assert.equal(run.total, 195);
@@ -73,8 +74,8 @@ test('Server serves gallery index, status endpoint, and reference keyframes safe
     const statusRes = await fetch(`http://127.0.0.1:${port}/status`);
     assert.equal(statusRes.status, 200);
     const status = await statusRes.json();
-    assert.equal(status.scenes, 6);
-    assert.equal(status.presets, 7);
+    assert.equal(status.scenes, 12);
+    assert.equal(status.presets, 13);
 
     const indexRes = await fetch(`http://127.0.0.1:${port}/`);
     assert.equal(indexRes.status, 200);
@@ -83,6 +84,7 @@ test('Server serves gallery index, status endpoint, and reference keyframes safe
 
     const refRes = await fetch(`http://127.0.0.1:${port}/assets/references/02-rea-decompiler.jpg`);
     assert.equal(refRes.status, 200);
+    await refRes.arrayBuffer();
 
     const traversal = await fetch(`http://127.0.0.1:${port}/../AGENTS.md`);
     assert.equal(traversal.status, 404);

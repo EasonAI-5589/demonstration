@@ -48,7 +48,7 @@ export async function serveStatic(req, res, { root = projectRoot } = {}) {
 
   if (pathname === '/status') {
     res.setHeader('Content-Type', types['.json']);
-    res.end(JSON.stringify({ application: 'demonstration', scenes: 6, presets: 7 }));
+    res.end(JSON.stringify({ application: 'demonstration', scenes: 12, presets: 13 }));
     return;
   }
 
@@ -105,6 +105,6 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     process.exitCode = 1;
   });
   server.listen(port, '127.0.0.1', () => {
-    console.log(`Demonstration → http://127.0.0.1:${server.address().port}\n6 Scenes · 7 Presets · Side-by-Side Reference Inspector`);
+    console.log(`Demonstration → http://127.0.0.1:${server.address().port}\n12 Scenes · 13 Presets · Synchronized Reference Inspector`);
   });
 }

@@ -43,7 +43,7 @@ export class Renderer {
 
   resize() {
     const next = Math.min(2, Math.max(1, globalThis.devicePixelRatio || 1));
-    if (next === this.dpr && this.canvas.width === WIDTH * next) return;
+    if (next === this.dpr && this.canvas.width === WIDTH * next && this.canvas.height === HEIGHT * next) return;
     this.dpr = next;
     this.canvas.width = Math.round(WIDTH * next);
     this.canvas.height = Math.round(HEIGHT * next);

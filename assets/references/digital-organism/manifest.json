@@ -1,0 +1,116 @@
+{
+  "id": "digital-organism",
+  "sourceUrl": "https://mp.weixin.qq.com/s/GPwxuDcuAEzy8Kl_wfvc6w",
+  "sourceTitle": "2024级艺术与科技《开源编程基础》课程小结",
+  "creator": "盛海波",
+  "section": "10",
+  "width": 1080,
+  "height": 1620,
+  "duration": 3.6,
+  "frames": [
+    {
+      "time": 0.0,
+      "src": "/assets/references/digital-organism/frame-000.jpg"
+    },
+    {
+      "time": 0.15,
+      "src": "/assets/references/digital-organism/frame-005.jpg"
+    },
+    {
+      "time": 0.3,
+      "src": "/assets/references/digital-organism/frame-010.jpg"
+    },
+    {
+      "time": 0.48,
+      "src": "/assets/references/digital-organism/frame-016.jpg"
+    },
+    {
+      "time": 0.63,
+      "src": "/assets/references/digital-organism/frame-021.jpg"
+    },
+    {
+      "time": 0.78,
+      "src": "/assets/references/digital-organism/frame-026.jpg"
+    },
+    {
+      "time": 0.93,
+      "src": "/assets/references/digital-organism/frame-031.jpg"
+    },
+    {
+      "time": 1.08,
+      "src": "/assets/references/digital-organism/frame-036.jpg"
+    },
+    {
+      "time": 1.23,
+      "src": "/assets/references/digital-organism/frame-041.jpg"
+    },
+    {
+      "time": 1.41,
+      "src": "/assets/references/digital-organism/frame-047.jpg"
+    },
+    {
+      "time": 1.56,
+      "src": "/assets/references/digital-organism/frame-052.jpg"
+    },
+    {
+      "time": 1.71,
+      "src": "/assets/references/digital-organism/frame-057.jpg"
+    },
+    {
+      "time": 1.86,
+      "src": "/assets/references/digital-organism/frame-062.jpg"
+    },
+    {
+      "time": 2.01,
+      "src": "/assets/references/digital-organism/frame-067.jpg"
+    },
+    {
+      "time": 2.16,
+      "src": "/assets/references/digital-organism/frame-072.jpg"
+    },
+    {
+      "time": 2.34,
+      "src": "/assets/references/digital-organism/frame-078.jpg"
+    },
+    {
+      "time": 2.49,
+      "src": "/assets/references/digital-organism/frame-083.jpg"
+    },
+    {
+      "time": 2.64,
+      "src": "/assets/references/digital-organism/frame-088.jpg"
+    },
+    {
+      "time": 2.79,
+      "src": "/assets/references/digital-organism/frame-093.jpg"
+    },
+    {
+      "time": 2.94,
+      "src": "/assets/references/digital-organism/frame-098.jpg"
+    },
+    {
+      "time": 3.09,
+      "src": "/assets/references/digital-organism/frame-103.jpg"
+    },
+    {
+      "time": 3.27,
+      "src": "/assets/references/digital-organism/frame-109.jpg"
+    },
+    {
+      "time": 3.42,
+      "src": "/assets/references/digital-organism/frame-114.jpg"
+    },
+    {
+      "time": 3.57,
+      "src": "/assets/references/digital-organism/frame-119.jpg"
+    }
+  ],
+  "sourceFrames": 120,
+  "sourceSha256": "633db149bb506ec5d194966af5da16c178b35594a7040e9b4817cd3c3f340401",
+  "reconstruction": "Native Canvas vector reconstruction from fourteen measured radial contour profiles. Original Perlin seed and exact inner line topology are unknown; accumulated contours are reconstructed from absolute time.",
+  "reaEvidenceIds": [
+    "ev_4b54f49bd7a458a6b4e3ff34ff0b00a908c9de074a849413a553012763b192f3",
+    "ev_b1523432b6dc27c31c9ffc3d8ac91ef97bdffcd214836718af7dbf77086d97ce"
+  ],
+  "vectorData": "/assets/references/digital-organism/motion-data.js"
+}

@@ -1,0 +1,140 @@
+{
+  "sourceUrl": "https://mp.weixin.qq.com/s/3IQIs6zP5jfdTwmT5LUJ6g",
+  "sourceTitle": "我复刻了 Claude 刚发布的生成式 UI 交互！",
+  "creator": "歸藏的AI工具箱",
+  "author": "歸藏的AI工具箱",
+  "width": 804,
+  "height": 720,
+  "duration": 6.9,
+  "sourceFrames": 69,
+  "sourceFrameDuration": 0.1,
+  "sourceSha256": "ec047b4c06128ef4a6d7eae74fe2f0391cd2286a0a8423974686b27714b91f24",
+  "sampledAt": "2026-10-26",
+  "frames": [
+    {
+      "frame": 0,
+      "time": 0.0,
+      "src": "/assets/references/progressive-diagram/frame-000.webp"
+    },
+    {
+      "frame": 3,
+      "time": 0.3,
+      "src": "/assets/references/progressive-diagram/frame-003.webp"
+    },
+    {
+      "frame": 6,
+      "time": 0.6,
+      "src": "/assets/references/progressive-diagram/frame-006.webp"
+    },
+    {
+      "frame": 9,
+      "time": 0.9,
+      "src": "/assets/references/progressive-diagram/frame-009.webp"
+    },
+    {
+      "frame": 12,
+      "time": 1.2,
+      "src": "/assets/references/progressive-diagram/frame-012.webp"
+    },
+    {
+      "frame": 15,
+      "time": 1.5,
+      "src": "/assets/references/progressive-diagram/frame-015.webp"
+    },
+    {
+      "frame": 18,
+      "time": 1.8,
+      "src": "/assets/references/progressive-diagram/frame-018.webp"
+    },
+    {
+      "frame": 21,
+      "time": 2.1,
+      "src": "/assets/references/progressive-diagram/frame-021.webp"
+    },
+    {
+      "frame": 24,
+      "time": 2.4,
+      "src": "/assets/references/progressive-diagram/frame-024.webp"
+    },
+    {
+      "frame": 27,
+      "time": 2.7,
+      "src": "/assets/references/progressive-diagram/frame-027.webp"
+    },
+    {
+      "frame": 30,
+      "time": 3.0,
+      "src": "/assets/references/progressive-diagram/frame-030.webp"
+    },
+    {
+      "frame": 33,
+      "time": 3.3,
+      "src": "/assets/references/progressive-diagram/frame-033.webp"
+    },
+    {
+      "frame": 36,
+      "time": 3.6,
+      "src": "/assets/references/progressive-diagram/frame-036.webp"
+    },
+    {
+      "frame": 39,
+      "time": 3.9,
+      "src": "/assets/references/progressive-diagram/frame-039.webp"
+    },
+    {
+      "frame": 42,
+      "time": 4.2,
+      "src": "/assets/references/progressive-diagram/frame-042.webp"
+    },
+    {
+      "frame": 45,
+      "time": 4.5,
+      "src": "/assets/references/progressive-diagram/frame-045.webp"
+    },
+    {
+      "frame": 48,
+      "time": 4.8,
+      "src": "/assets/references/progressive-diagram/frame-048.webp"
+    },
+    {
+      "frame": 51,
+      "time": 5.1,
+      "src": "/assets/references/progressive-diagram/frame-051.webp"
+    },
+    {
+      "frame": 54,
+      "time": 5.4,
+      "src": "/assets/references/progressive-diagram/frame-054.webp"
+    },
+    {
+      "frame": 57,
+      "time": 5.7,
+      "src": "/assets/references/progressive-diagram/frame-057.webp"
+    },
+    {
+      "frame": 60,
+      "time": 6.0,
+      "src": "/assets/references/progressive-diagram/frame-060.webp"
+    },
+    {
+      "frame": 63,
+      "time": 6.3,
+      "src": "/assets/references/progressive-diagram/frame-063.webp"
+    },
+    {
+      "frame": 66,
+      "time": 6.6,
+      "src": "/assets/references/progressive-diagram/frame-066.webp"
+    },
+    {
+      "frame": 68,
+      "time": 6.8,
+      "src": "/assets/references/progressive-diagram/frame-068.webp"
+    }
+  ],
+  "limitations": [
+    "GIF only; generated widget markup for this particular conversation is not supplied.",
+    "Section onset and scrolling are reconstructed from decoded frames, not original application telemetry.",
+    "Local CodePilot source inspection establishes a mechanism, not identical historical runtime."
+  ]
+}

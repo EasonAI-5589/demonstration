@@ -1,0 +1,87 @@
+{
+  "sourceUrl": "https://mp.weixin.qq.com/s/h3__deLDCtVYr_IS8m_NWg",
+  "sourceTitle": "3分钟带你了解互动编程艺术",
+  "creator": "Random International（公众号归属；原始作品名待核实）",
+  "width": 640,
+  "height": 360,
+  "duration": 5.61,
+  "frameCount": 17,
+  "sourceSha256": "7c4d8271f12285d06d9ea4c0b20ae57aa5d6637e5bcbed78fa988b347130fb9c",
+  "frames": [
+    {
+      "time": 0,
+      "src": "/assets/references/mirror-array/frame-000.webp"
+    },
+    {
+      "time": 0.33,
+      "src": "/assets/references/mirror-array/frame-001.webp"
+    },
+    {
+      "time": 0.66,
+      "src": "/assets/references/mirror-array/frame-002.webp"
+    },
+    {
+      "time": 0.99,
+      "src": "/assets/references/mirror-array/frame-003.webp"
+    },
+    {
+      "time": 1.32,
+      "src": "/assets/references/mirror-array/frame-004.webp"
+    },
+    {
+      "time": 1.65,
+      "src": "/assets/references/mirror-array/frame-005.webp"
+    },
+    {
+      "time": 1.98,
+      "src": "/assets/references/mirror-array/frame-006.webp"
+    },
+    {
+      "time": 2.31,
+      "src": "/assets/references/mirror-array/frame-007.webp"
+    },
+    {
+      "time": 2.64,
+      "src": "/assets/references/mirror-array/frame-008.webp"
+    },
+    {
+      "time": 2.97,
+      "src": "/assets/references/mirror-array/frame-009.webp"
+    },
+    {
+      "time": 3.3,
+      "src": "/assets/references/mirror-array/frame-010.webp"
+    },
+    {
+      "time": 3.63,
+      "src": "/assets/references/mirror-array/frame-011.webp"
+    },
+    {
+      "time": 3.96,
+      "src": "/assets/references/mirror-array/frame-012.webp"
+    },
+    {
+      "time": 4.29,
+      "src": "/assets/references/mirror-array/frame-013.webp"
+    },
+    {
+      "time": 4.62,
+      "src": "/assets/references/mirror-array/frame-014.webp"
+    },
+    {
+      "time": 4.95,
+      "src": "/assets/references/mirror-array/frame-015.webp"
+    },
+    {
+      "time": 5.28,
+      "src": "/assets/references/mirror-array/frame-016.webp"
+    }
+  ],
+  "reconstruction": "原 GIF 的尺寸与时间戳已测量；几何与运动按画面重建，非原作者源代码。",
+  "reaEvidence": {
+    "capture": "ev_c6e890634c54bbfbfddc8b34009f0957491352d5b3948df70409142ee6d1addc",
+    "sourceFrameDifference": "ev_99172e1238259038a9b735780b3343f33cb6ccbd074dfd17d95d8b0f82671157",
+    "bundle": "D:/inferenceNet/artifacts/motion-expansion-20261026/evidence/mirror-fountain-rea.bundle.json",
+    "comparisonScope": "Decoded source frame 0 vs middle frame in a controlled local browser; not a reconstruction similarity score."
+  }
+}

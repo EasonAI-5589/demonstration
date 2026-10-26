@@ -1,0 +1,119 @@
+{
+  "sourceUrl": "https://mp.weixin.qq.com/s/wyB-VpXgcPd78laDY9Tetg",
+  "sourceTitle": "聚焦 | 光影秘境 无限可能",
+  "creator": "张楚宜 / 上海纽约大学 IMA",
+  "width": 360,
+  "height": 203,
+  "duration": 2.0,
+  "frameCount": 25,
+  "sourceSha256": "00aaf95893e0e024e6dbe17e0d268153674c21423037b178355319e8113bd807",
+  "frames": [
+    {
+      "time": 0,
+      "src": "/assets/references/poseidon-fountain/frame-000.webp"
+    },
+    {
+      "time": 0.08,
+      "src": "/assets/references/poseidon-fountain/frame-001.webp"
+    },
+    {
+      "time": 0.16,
+      "src": "/assets/references/poseidon-fountain/frame-002.webp"
+    },
+    {
+      "time": 0.24,
+      "src": "/assets/references/poseidon-fountain/frame-003.webp"
+    },
+    {
+      "time": 0.32,
+      "src": "/assets/references/poseidon-fountain/frame-004.webp"
+    },
+    {
+      "time": 0.4,
+      "src": "/assets/references/poseidon-fountain/frame-005.webp"
+    },
+    {
+      "time": 0.48,
+      "src": "/assets/references/poseidon-fountain/frame-006.webp"
+    },
+    {
+      "time": 0.56,
+      "src": "/assets/references/poseidon-fountain/frame-007.webp"
+    },
+    {
+      "time": 0.64,
+      "src": "/assets/references/poseidon-fountain/frame-008.webp"
+    },
+    {
+      "time": 0.72,
+      "src": "/assets/references/poseidon-fountain/frame-009.webp"
+    },
+    {
+      "time": 0.8,
+      "src": "/assets/references/poseidon-fountain/frame-010.webp"
+    },
+    {
+      "time": 0.88,
+      "src": "/assets/references/poseidon-fountain/frame-011.webp"
+    },
+    {
+      "time": 0.96,
+      "src": "/assets/references/poseidon-fountain/frame-012.webp"
+    },
+    {
+      "time": 1.04,
+      "src": "/assets/references/poseidon-fountain/frame-013.webp"
+    },
+    {
+      "time": 1.12,
+      "src": "/assets/references/poseidon-fountain/frame-014.webp"
+    },
+    {
+      "time": 1.2,
+      "src": "/assets/references/poseidon-fountain/frame-015.webp"
+    },
+    {
+      "time": 1.28,
+      "src": "/assets/references/poseidon-fountain/frame-016.webp"
+    },
+    {
+      "time": 1.36,
+      "src": "/assets/references/poseidon-fountain/frame-017.webp"
+    },
+    {
+      "time": 1.44,
+      "src": "/assets/references/poseidon-fountain/frame-018.webp"
+    },
+    {
+      "time": 1.52,
+      "src": "/assets/references/poseidon-fountain/frame-019.webp"
+    },
+    {
+      "time": 1.6,
+      "src": "/assets/references/poseidon-fountain/frame-020.webp"
+    },
+    {
+      "time": 1.68,
+      "src": "/assets/references/poseidon-fountain/frame-021.webp"
+    },
+    {
+      "time": 1.76,
+      "src": "/assets/references/poseidon-fountain/frame-022.webp"
+    },
+    {
+      "time": 1.84,
+      "src": "/assets/references/poseidon-fountain/frame-023.webp"
+    },
+    {
+      "time": 1.92,
+      "src": "/assets/references/poseidon-fountain/frame-024.webp"
+    }
+  ],
+  "reconstruction": "原 GIF 的尺寸与时间戳已测量；几何与运动按画面重建，非原作者源代码。",
+  "reaEvidence": {
+    "capture": "ev_eb614e7416a81096ec7096540574acaae9a79807fc1ee5e4fc0752024f349640",
+    "sourceFrameDifference": "ev_3117222dbaf9de8cf0e5d71963573b2043b5f0cbc534244245e78d38421d078e",
+    "bundle": "D:/inferenceNet/artifacts/motion-expansion-20261026/evidence/mirror-fountain-rea.bundle.json",
+    "comparisonScope": "Decoded source frame 0 vs middle frame in a controlled local browser; not a reconstruction similarity score."
+  }
+}

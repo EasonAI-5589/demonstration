@@ -1,0 +1,116 @@
+{
+  "id": "grid-rhythm",
+  "sourceUrl": "https://mp.weixin.qq.com/s/GPwxuDcuAEzy8Kl_wfvc6w",
+  "sourceTitle": "2024级艺术与科技《开源编程基础》课程小结",
+  "creator": "解薇霓",
+  "section": "03",
+  "width": 1080,
+  "height": 1620,
+  "duration": 1.24,
+  "frames": [
+    {
+      "time": 0.0,
+      "src": "/assets/references/grid-rhythm/frame-000.jpg"
+    },
+    {
+      "time": 0.06,
+      "src": "/assets/references/grid-rhythm/frame-003.jpg"
+    },
+    {
+      "time": 0.1,
+      "src": "/assets/references/grid-rhythm/frame-005.jpg"
+    },
+    {
+      "time": 0.16,
+      "src": "/assets/references/grid-rhythm/frame-008.jpg"
+    },
+    {
+      "time": 0.22,
+      "src": "/assets/references/grid-rhythm/frame-011.jpg"
+    },
+    {
+      "time": 0.26,
+      "src": "/assets/references/grid-rhythm/frame-013.jpg"
+    },
+    {
+      "time": 0.32,
+      "src": "/assets/references/grid-rhythm/frame-016.jpg"
+    },
+    {
+      "time": 0.38,
+      "src": "/assets/references/grid-rhythm/frame-019.jpg"
+    },
+    {
+      "time": 0.42,
+      "src": "/assets/references/grid-rhythm/frame-021.jpg"
+    },
+    {
+      "time": 0.48,
+      "src": "/assets/references/grid-rhythm/frame-024.jpg"
+    },
+    {
+      "time": 0.54,
+      "src": "/assets/references/grid-rhythm/frame-027.jpg"
+    },
+    {
+      "time": 0.58,
+      "src": "/assets/references/grid-rhythm/frame-029.jpg"
+    },
+    {
+      "time": 0.64,
+      "src": "/assets/references/grid-rhythm/frame-032.jpg"
+    },
+    {
+      "time": 0.68,
+      "src": "/assets/references/grid-rhythm/frame-034.jpg"
+    },
+    {
+      "time": 0.74,
+      "src": "/assets/references/grid-rhythm/frame-037.jpg"
+    },
+    {
+      "time": 0.8,
+      "src": "/assets/references/grid-rhythm/frame-040.jpg"
+    },
+    {
+      "time": 0.84,
+      "src": "/assets/references/grid-rhythm/frame-042.jpg"
+    },
+    {
+      "time": 0.9,
+      "src": "/assets/references/grid-rhythm/frame-045.jpg"
+    },
+    {
+      "time": 0.96,
+      "src": "/assets/references/grid-rhythm/frame-048.jpg"
+    },
+    {
+      "time": 1.0,
+      "src": "/assets/references/grid-rhythm/frame-050.jpg"
+    },
+    {
+      "time": 1.06,
+      "src": "/assets/references/grid-rhythm/frame-053.jpg"
+    },
+    {
+      "time": 1.12,
+      "src": "/assets/references/grid-rhythm/frame-056.jpg"
+    },
+    {
+      "time": 1.16,
+      "src": "/assets/references/grid-rhythm/frame-058.jpg"
+    },
+    {
+      "time": 1.22,
+      "src": "/assets/references/grid-rhythm/frame-061.jpg"
+    }
+  ],
+  "sourceFrames": 62,
+  "sourceSha256": "c6f3568b9521a3faaf0a3d30c6904f8275d371bf3d2bb25f311116324349c870",
+  "reconstruction": "Native Canvas vector grid driven by source white-node optical-flow tracks. Occluded node identities, six anchors, mesh topology and pointer interaction are approximate; colors sampled from the final source frame.",
+  "reaEvidenceIds": [
+    "ev_4b54f49bd7a458a6b4e3ff34ff0b00a908c9de074a849413a553012763b192f3",
+    "ev_b1523432b6dc27c31c9ffc3d8ac91ef97bdffcd214836718af7dbf77086d97ce"
+  ],
+  "vectorData": "/assets/references/grid-rhythm/motion-data.js"
+}
